@@ -1,9 +1,153 @@
+#include <string.h>
 #include <assert.h>
 #include "compiler.h"
 
 #define LOOK_AHEAD_TOKEN_COUNT (2)
 static Token st_look_ahead_token_stack[LOOK_AHEAD_TOKEN_COUNT];
 static int st_look_ahead_token_count = 0;
+
+static char *st_current_function_name;
+static LocalName *st_current_function_local;
+static int st_auto_name_index;
+static int st_static_name_index;
+static StaticName *st_static_name;
+
+static int
+add_static_name(char *name, Boolean is_vec, int vec_size, Boolean defined,
+		int line_number)
+{
+    int i;
+
+    for (i = 0; i < st_static_name_index; i++) {
+	if (!strcmp(name, st_static_name[i].name)) {
+	    break;
+	}
+    }
+    if (i < st_static_name_index) {
+	if (defined && st_static_name[i].defined) {
+	    bcp_compile_error(NAME_ALREADY_DEFINED_ERR,
+			      line_number, name);
+	}
+	if (defined) {
+	    st_static_name[i].defined = defined;
+	    if (is_vec) {
+		st_static_name[i].is_vec = TRUE;
+		st_static_name[i].vec_size = vec_size;
+	    }
+	}
+	return i;
+    }
+
+    st_static_name
+	= MEM_realloc(st_static_name,
+		      sizeof(StaticName) * (st_static_name_index + 1));
+
+    st_static_name[i].name = name;
+    st_static_name[i].is_vec = is_vec;
+    st_static_name[i].vec_size = vec_size;
+    st_static_name[i].name = name;
+    st_static_name_index++;
+
+    return i;
+}
+
+static void
+add_local_name(LocalNameKind kind, char *name, Boolean is_vec, int vec_size,
+	       int line_number)
+{
+    LocalName *pos;
+    LocalName *lp;
+
+    assert(kind == EXTERNAL_LOCAL_NAME || kind == AUTO_LOCAL_NAME);
+
+    if (st_current_function_local != NULL) {
+	for (pos = st_current_function_local; pos->next != NULL;
+	     pos = pos->next) {
+	    if (!strcmp(name, pos->name)) {
+		bcp_compile_error(NAME_ALREADY_DEFINED_ERR,
+				  line_number, name);
+	    }
+	}
+	lp = bcp_malloc(sizeof(LocalName));
+	pos->next = lp;
+    } else {
+	lp = bcp_malloc(sizeof(LocalName));
+    }
+    st_current_function_local = lp;
+    lp->next = NULL;
+
+    lp->kind = kind;
+    lp->name = name;
+
+    switch (kind) {
+    case EXTERNAL_LOCAL_NAME:
+	lp->u.ext_ln.static_name_index
+	    = add_static_name(name, FALSE, 0, FALSE, line_number);
+	break;
+    case INTERNAL_LOCAL_NAME:
+	assert(0);
+	break;
+    case AUTO_LOCAL_NAME:
+	lp->u.auto_ln.offset = st_static_name_index;
+	lp->u.auto_ln.is_vec = is_vec;
+	lp->u.auto_ln.vec_size = vec_size;
+	if (is_vec) {
+	    st_auto_name_index += vec_size;
+	} else {
+	    st_auto_name_index++;
+	}
+	break;
+    default:
+	assert(0);
+    }
+}
+
+static LocalName *
+search_local_name(char *name)
+{
+    LocalName *pos;
+
+    for (pos = st_current_function_local; pos != NULL; pos = pos->next) {
+	if (!strcmp(name, pos->name)) {
+	    return pos;
+	}
+    }
+    return NULL;
+}
+
+static void
+add_label(char *name, Boolean defined, int line_number)
+{
+    LocalName *pos;
+    LocalName *lp;
+    char *external_name;
+
+    if (st_current_function_local != NULL) {
+	for (pos = st_current_function_local; pos->next != NULL;
+	     pos = pos->next) {
+	    if (!strcmp(name, pos->name)) {
+		if (defined && pos->u.int_ln.defined) {
+		    bcp_compile_error(NAME_ALREADY_DEFINED_ERR,
+				      line_number, name);
+		}
+	    }
+	}
+	lp = bcp_malloc(sizeof(LocalName));
+	pos->next = lp;
+    } else {
+	lp = bcp_malloc(sizeof(LocalName));
+    }
+    lp->next = NULL;
+
+    lp->kind = INTERNAL_LOCAL_NAME;
+    external_name = bcp_malloc(strlen(st_current_function_name)
+			       + 1
+			       + strlen(name) + 1);
+    sprintf(external_name, "%s:%s", st_current_function_name, name);
+    lp->u.int_ln.static_name_index
+	= add_static_name(external_name, FALSE, 0, defined, line_number);
+    lp->u.int_ln.defined = defined;
+}
 
 static void
 unget_token(Token token)
@@ -137,6 +281,23 @@ alloc_expression(ExpressionKind kind, int line_number)
 }
 
 static Expression *
+parse_name(char *name, int line_number)
+{
+    Expression *expr;
+    LocalName *ln;
+
+    expr = alloc_expression(NAME_EXPRESSION, line_number);
+    expr->u.name_e.name = name;
+
+    ln = search_local_name(name);
+    if (ln == NULL) {
+	add_label(name, FALSE, line_number);
+    }
+
+    return expr;
+}
+
+static Expression *
 parse_primary_expression()
 {
     Token first_token = get_token();
@@ -144,8 +305,7 @@ parse_primary_expression()
     Expression *expr;
 
     if (first_token.kind == NAME_TOKEN) {
-	expr = alloc_expression(NAME_EXPRESSION, first_token.line_number);
-	expr->u.name_e.name = first_token.u.name;
+	expr = parse_name(first_token.u.name, first_token.line_number);
     } else if (first_token.kind == INT_LITERAL_TOKEN) {
 	expr = alloc_expression(INTEGER_LITERAL, first_token.line_number);
 	expr->u.int_e.int_value = first_token.u.int_value;
@@ -281,6 +441,30 @@ parse_unary_expression()
     return expr;
 }
 
+static Expression *
+fold_multiplicative_expression(BinaryOperator op,
+			       Expression *left, Expression *right,
+			       int line_number)
+{
+    if (left->kind == INTEGER_LITERAL && right->kind == INTEGER_LITERAL) {
+	Expression *expr;
+
+	expr = alloc_expression(INTEGER_LITERAL, line_number);
+	if (op == MUL_OPERATOR) {
+	    expr->u.int_e.int_value
+		= left->u.int_e.int_value * right->u.int_e.int_value;
+	} else if (op == DIV_OPERATOR) {
+	    expr->u.int_e.int_value
+		= left->u.int_e.int_value / right->u.int_e.int_value;
+	} else {
+	    assert(op == MOD_OPERATOR);
+	    expr->u.int_e.int_value
+		= left->u.int_e.int_value % right->u.int_e.int_value;
+	}
+	return expr;
+    }
+    return NULL;
+}
 
 static Expression *
 parse_multiplicative_expression()
@@ -306,14 +490,41 @@ parse_multiplicative_expression()
 	    return left;
 	}
 	right = parse_unary_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = op;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
+	expr = fold_multiplicative_expression(op, left, right,
+					      token.line_number);
+	if (expr == NULL) {
+	    expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+	    expr->u.binary_e.operator = op;
+	    expr->u.binary_e.left = left;
+	    expr->u.binary_e.right = right;
+	}
 	left = expr;
     }
 
     return left;
+}
+
+static Expression *
+fold_additive_expression(BinaryOperator op,
+			 Expression *left, Expression *right,
+			 int line_number)
+{
+    if (left->kind == INTEGER_LITERAL && right->kind == INTEGER_LITERAL) {
+	Expression *expr;
+
+	expr = alloc_expression(INTEGER_LITERAL, line_number);
+	if (op == ADD_OPERATOR) {
+	    expr->u.int_e.int_value
+		= left->u.int_e.int_value + right->u.int_e.int_value;
+	} else {
+	    assert(op == SUB_OPERATOR);
+	    expr->u.int_e.int_value
+		= left->u.int_e.int_value - right->u.int_e.int_value;
+	}
+
+	return expr;
+    }
+    return NULL;
 }
 
 static Expression *
@@ -338,10 +549,14 @@ parse_additive_expression()
 	    return left;
 	}
 	right = parse_multiplicative_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = op;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
+
+	expr = fold_additive_expression(op, left, right, token.line_number);
+	if (expr == NULL) {
+	    expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+	    expr->u.binary_e.operator = op;
+	    expr->u.binary_e.left = left;
+	    expr->u.binary_e.right = right;
+	}
 	left = expr;
     }
 
@@ -658,12 +873,18 @@ parse_auto_statement(int line_number)
 	nc->name = name_token.u.name;
 	lb_token = get_token();
 	if (lb_token.kind == LB_TOKEN) {
-	    nc->vec_size = parse_constant();
+	    Constant *c = parse_constant();
+	    if (c->kind != INT_CONSTANT) {
+		bcp_compile_error(VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
+				  c->line_number);
+	    }
+	    nc->is_vec = TRUE;
+	    nc->vec_size = c->u.int_value;
 	    rb_token = get_token();
 	    check_token(rb_token, RB_TOKEN);
 	} else {
 	    unget_token(lb_token);
-	    nc->vec_size = NULL;
+	    nc->is_vec = FALSE;
 	}
 	nc->next = NULL;
 
@@ -676,6 +897,9 @@ parse_auto_statement(int line_number)
 
 	next_token = get_token();
 	check_token2(next_token, COMMA_TOKEN, SEMICOLON_TOKEN);
+
+	add_local_name(AUTO_LOCAL_NAME, nc->name, nc->is_vec, nc->vec_size,
+		       name_token.line_number);
 
 	if (next_token.kind == SEMICOLON_TOKEN) {
 	    break;
@@ -712,6 +936,10 @@ parse_extrn_statement(int line_number)
 	    tail->next = name;
 	}
 	tail = name;
+
+	add_local_name(EXTERNAL_LOCAL_NAME, name->name, FALSE, 0,
+		       name_token.line_number);
+
 	comma_token = get_token();
 	if (comma_token.kind == SEMICOLON_TOKEN) {
 	    break;
@@ -731,6 +959,7 @@ parse_labeled_statement(char *name, int line_number)
 
     ret = alloc_statement(LABELED_STATEMENT, line_number);
     ret->u.label_s.name = name;
+    add_label(name, TRUE, line_number);
     ret->u.label_s.following = parse_statement();
 
     return ret;
@@ -926,6 +1155,16 @@ parse_return_statement(int line_number)
 }
 
 static Statement *
+parse_null_statement(int line_number)
+{
+    Statement *ret;
+
+    ret = alloc_statement(NULL_STATEMENT, line_number);
+
+    return ret;
+}
+
+static Statement *
 parse_expression_statement(int line_number)
 {
     Statement *ret;
@@ -972,6 +1211,8 @@ parse_statement(void)
 	ret = parse_break_statement(first_token.line_number);
     } else if (first_token.kind == RETURN_TOKEN) {
 	ret = parse_return_statement(first_token.line_number);
+    } else if (first_token.kind == SEMICOLON_TOKEN) {
+	ret = parse_null_statement(first_token.line_number);
     } else {
 	unget_token(first_token);
 	ret = parse_expression_statement(first_token.line_number);
@@ -987,6 +1228,10 @@ parse_function_definition(char *name)
     Statement *stmt;
     Definition *ret;
 
+    st_current_function_local = NULL;
+    st_auto_name_index = 0;
+    st_current_function_name = name;
+
     params = parse_parameters();
     stmt = parse_statement();
 
@@ -995,7 +1240,10 @@ parse_function_definition(char *name)
     ret->u.func_def.name = name;
     ret->u.func_def.params = params;
     ret->u.func_def.stmt = stmt;
+    ret->u.func_def.local_names = st_current_function_local;
     ret->next = NULL;
+
+    st_current_function_name = NULL;
 
     return ret;
 }
@@ -1115,6 +1363,12 @@ parse(void)
     Definition *head = NULL;
     Definition *tail = NULL;
     Definition *def;
+
+    st_static_name_index = 0;
+    if (st_static_name != NULL) {
+	free(st_static_name);
+    }
+    st_static_name = NULL;
 
     for (;;) {
 	def = parse_definition();

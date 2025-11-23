@@ -29,6 +29,47 @@ typedef struct {
     int line_number;
 } Constant;
 
+typedef struct {
+    char *name;
+    Boolean is_vec;
+    int vec_size;
+    Boolean defined;
+    int value;
+    int index;
+} StaticName;
+
+typedef enum {
+    EXTERNAL_LOCAL_NAME,
+    INTERNAL_LOCAL_NAME,
+    AUTO_LOCAL_NAME
+} LocalNameKind;
+
+typedef struct {
+    int static_name_index;
+} ExternalLocalName;
+
+typedef struct {
+    int static_name_index;
+    Boolean defined;
+} InternalLocalName;
+
+typedef struct {
+    int offset;
+    Boolean is_vec;
+    int vec_size;
+} AutoLocalName;
+
+typedef struct LocalName_tag {
+    LocalNameKind kind;
+    char *name;
+    union {
+	ExternalLocalName ext_ln;
+	InternalLocalName int_ln;
+	AutoLocalName auto_ln;
+    } u;
+    struct LocalName_tag *next;
+} LocalName;
+
 typedef enum {
     NAME_EXPRESSION,
     INTEGER_LITERAL,
@@ -45,6 +86,7 @@ typedef struct Expression_tag Expression;
 
 typedef struct {
     char *name;
+    LocalName *local_name;
 } NameExpression;
 
 typedef struct {
@@ -168,6 +210,7 @@ typedef enum {
     GOTO_STATEMENT,
     BREAK_STATEMENT,
     RETURN_STATEMENT,
+    NULL_STATEMENT,
     EXPRESSION_STATEMENT
 } StatementKind;
 
@@ -175,7 +218,8 @@ typedef struct Statement_tag Statement;
 
 typedef struct NameConstant_tag {
     char *name;
-    Constant *vec_size;
+    Boolean is_vec;
+    int vec_size;
     struct NameConstant_tag *next;
 } NameConstant;
 
@@ -264,6 +308,7 @@ typedef struct {
     char *name;
     NameItem *params;
     Statement *stmt;
+    LocalName *local_names;
 } FunctionDefinition;
 
 typedef enum {
@@ -310,7 +355,8 @@ typedef enum {
     UNEXPECTED_TOKEN2_ERR,
     NOT_OCTAL_ERR,
     INVALID_CHARACTER_ERR,
-    VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR
+    VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
+    NAME_ALREADY_DEFINED_ERR
 } CompileErrorCode;
 
 /* lexer.c */
@@ -326,5 +372,3 @@ void bcp_dump_tree(FILE *fp, Definition *def_head);
 void bcp_compile_error(CompileErrorCode code, int line_number, ...);
 
 #endif /* COMPILER_H_INCLUDED */
-
-

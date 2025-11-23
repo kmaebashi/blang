@@ -17,6 +17,7 @@ static char *st_messages[] = {
     "not octal. (%s)",
     "invalid character.",
     "vector size must be an integer.(%s)",
+    "name %s is already defined.",
 };
 
 void

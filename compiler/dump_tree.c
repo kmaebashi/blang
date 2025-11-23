@@ -256,10 +256,8 @@ dump_name_constants(FILE *fp, NameConstant *head)
     for (nc = head; nc != NULL; nc = nc->next) {
 	fprintf(fp, "%s", nc->name);
 
-	if (nc->vec_size != NULL) {
-	    fprintf(fp, "[");
-	    dump_constant(fp, nc->vec_size);
-	    fprintf(fp, "]");
+	if (nc->is_vec) {
+	    fprintf(fp, "[%d]", nc->vec_size);
 	}
 	if (nc->next != NULL) {
 	    fprintf(fp, ", ");
@@ -393,6 +391,13 @@ dump_return_statement(FILE *fp, Statement *stmt, int level)
 }
 
 static void
+dump_null_statement(FILE *fp, Statement *stmt, int level)
+{
+    out_indent(fp, level);
+    fprintf(fp, "null_statement\n");
+}
+
+static void
 dump_expression_statement(FILE *fp, Statement *stmt, int level)
 {
     out_indent(fp, level);
@@ -457,6 +462,9 @@ dump_statement(FILE *fp, Statement *stmt, int level)
 	break;
     case RETURN_STATEMENT:
 	dump_return_statement(fp, stmt, level);
+	break;
+    case NULL_STATEMENT:
+	dump_null_statement(fp, stmt, level);
 	break;
     case EXPRESSION_STATEMENT:
 	dump_expression_statement(fp, stmt, level);
