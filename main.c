@@ -8,7 +8,7 @@ main(int argc, char **argv)
     MEM_Storage storage;
 
     storage = MEM_open_storage(4096);
-    src_fp = fopen("test.b", "r");
+    src_fp = fopen("name_test.b", "r");
     BCP_compile(storage, src_fp);
 
     return 0;

@@ -1,7 +1,8 @@
-SUBDIRS = memory compiler
+SUBDIRS = memory compiler bvm
 OBJS = \
   ./main.o\
   compiler/compiler.o\
+  bvm/bvm.o\
   memory/mem.o
 CFLAGS = -c -g -DDEBUG -Wall -ansi -pedantic -Wswitch-enum
 TARGET = lexer

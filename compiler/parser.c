@@ -6,149 +6,6 @@
 static Token st_look_ahead_token_stack[LOOK_AHEAD_TOKEN_COUNT];
 static int st_look_ahead_token_count = 0;
 
-static char *st_current_function_name;
-static LocalName *st_current_function_local;
-static int st_auto_name_index;
-static int st_static_name_index;
-static StaticName *st_static_name;
-
-static int
-add_static_name(char *name, Boolean is_vec, int vec_size, Boolean defined,
-		int line_number)
-{
-    int i;
-
-    for (i = 0; i < st_static_name_index; i++) {
-	if (!strcmp(name, st_static_name[i].name)) {
-	    break;
-	}
-    }
-    if (i < st_static_name_index) {
-	if (defined && st_static_name[i].defined) {
-	    bcp_compile_error(NAME_ALREADY_DEFINED_ERR,
-			      line_number, name);
-	}
-	if (defined) {
-	    st_static_name[i].defined = defined;
-	    if (is_vec) {
-		st_static_name[i].is_vec = TRUE;
-		st_static_name[i].vec_size = vec_size;
-	    }
-	}
-	return i;
-    }
-
-    st_static_name
-	= MEM_realloc(st_static_name,
-		      sizeof(StaticName) * (st_static_name_index + 1));
-
-    st_static_name[i].name = name;
-    st_static_name[i].is_vec = is_vec;
-    st_static_name[i].vec_size = vec_size;
-    st_static_name[i].name = name;
-    st_static_name_index++;
-
-    return i;
-}
-
-static void
-add_local_name(LocalNameKind kind, char *name, Boolean is_vec, int vec_size,
-	       int line_number)
-{
-    LocalName *pos;
-    LocalName *lp;
-
-    assert(kind == EXTERNAL_LOCAL_NAME || kind == AUTO_LOCAL_NAME);
-
-    if (st_current_function_local != NULL) {
-	for (pos = st_current_function_local; pos->next != NULL;
-	     pos = pos->next) {
-	    if (!strcmp(name, pos->name)) {
-		bcp_compile_error(NAME_ALREADY_DEFINED_ERR,
-				  line_number, name);
-	    }
-	}
-	lp = bcp_malloc(sizeof(LocalName));
-	pos->next = lp;
-    } else {
-	lp = bcp_malloc(sizeof(LocalName));
-    }
-    st_current_function_local = lp;
-    lp->next = NULL;
-
-    lp->kind = kind;
-    lp->name = name;
-
-    switch (kind) {
-    case EXTERNAL_LOCAL_NAME:
-	lp->u.ext_ln.static_name_index
-	    = add_static_name(name, FALSE, 0, FALSE, line_number);
-	break;
-    case INTERNAL_LOCAL_NAME:
-	assert(0);
-	break;
-    case AUTO_LOCAL_NAME:
-	lp->u.auto_ln.offset = st_static_name_index;
-	lp->u.auto_ln.is_vec = is_vec;
-	lp->u.auto_ln.vec_size = vec_size;
-	if (is_vec) {
-	    st_auto_name_index += vec_size;
-	} else {
-	    st_auto_name_index++;
-	}
-	break;
-    default:
-	assert(0);
-    }
-}
-
-static LocalName *
-search_local_name(char *name)
-{
-    LocalName *pos;
-
-    for (pos = st_current_function_local; pos != NULL; pos = pos->next) {
-	if (!strcmp(name, pos->name)) {
-	    return pos;
-	}
-    }
-    return NULL;
-}
-
-static void
-add_label(char *name, Boolean defined, int line_number)
-{
-    LocalName *pos;
-    LocalName *lp;
-    char *external_name;
-
-    if (st_current_function_local != NULL) {
-	for (pos = st_current_function_local; pos->next != NULL;
-	     pos = pos->next) {
-	    if (!strcmp(name, pos->name)) {
-		if (defined && pos->u.int_ln.defined) {
-		    bcp_compile_error(NAME_ALREADY_DEFINED_ERR,
-				      line_number, name);
-		}
-	    }
-	}
-	lp = bcp_malloc(sizeof(LocalName));
-	pos->next = lp;
-    } else {
-	lp = bcp_malloc(sizeof(LocalName));
-    }
-    lp->next = NULL;
-
-    lp->kind = INTERNAL_LOCAL_NAME;
-    external_name = bcp_malloc(strlen(st_current_function_name)
-			       + 1
-			       + strlen(name) + 1);
-    sprintf(external_name, "%s:%s", st_current_function_name, name);
-    lp->u.int_ln.static_name_index
-	= add_static_name(external_name, FALSE, 0, defined, line_number);
-    lp->u.int_ln.defined = defined;
-}
-
 static void
 unget_token(Token token)
 {
@@ -268,6 +125,7 @@ parse_constant(void)
     return ret;
 }
 
+
 static Expression *parse_expression(void);
 
 static Expression *
@@ -276,22 +134,30 @@ alloc_expression(ExpressionKind kind, int line_number)
     Expression *ret = bcp_malloc(sizeof(Expression));
     ret->kind = kind;
     ret->line_number = line_number;
+    ret->has_lvalue = FALSE;
+    ret->is_lvalue = FALSE;
     
     return ret;
 }
 
 static Expression *
-parse_name(char *name, int line_number)
+constant_to_expression(Constant *c)
 {
     Expression *expr;
-    LocalName *ln;
 
-    expr = alloc_expression(NAME_EXPRESSION, line_number);
-    expr->u.name_e.name = name;
-
-    ln = search_local_name(name);
-    if (ln == NULL) {
-	add_label(name, FALSE, line_number);
+    switch (c->kind) {
+    case INT_CONSTANT:
+	expr = alloc_expression(INTEGER_LITERAL, c->line_number);
+	expr->u.int_e.int_value = c->u.int_value;
+	break;
+    case CHARS_CONSTANT:
+	expr = alloc_expression(CHARS_LITERAL, c->line_number);
+	expr->u.chars_e.chars = c->u.chars;
+	break;
+    case STRING_CONSTANT:
+	expr = alloc_expression(STRING_LITERAL, c->line_number);
+	expr->u.str_e.str_literal = c->u.str_literal;
+	break;
     }
 
     return expr;
@@ -305,7 +171,8 @@ parse_primary_expression()
     Expression *expr;
 
     if (first_token.kind == NAME_TOKEN) {
-	expr = parse_name(first_token.u.name, first_token.line_number);
+	expr = alloc_expression(NAME_EXPRESSION, first_token.line_number);
+	expr->u.name_e.name = first_token.u.name;
     } else if (first_token.kind == INT_LITERAL_TOKEN) {
 	expr = alloc_expression(INTEGER_LITERAL, first_token.line_number);
 	expr->u.int_e.int_value = first_token.u.int_value;
@@ -879,7 +746,7 @@ parse_auto_statement(int line_number)
 				  c->line_number);
 	    }
 	    nc->is_vec = TRUE;
-	    nc->vec_size = c->u.int_value;
+	    nc->vec_size = c->u.int_value + 1;
 	    rb_token = get_token();
 	    check_token(rb_token, RB_TOKEN);
 	} else {
@@ -897,9 +764,6 @@ parse_auto_statement(int line_number)
 
 	next_token = get_token();
 	check_token2(next_token, COMMA_TOKEN, SEMICOLON_TOKEN);
-
-	add_local_name(AUTO_LOCAL_NAME, nc->name, nc->is_vec, nc->vec_size,
-		       name_token.line_number);
 
 	if (next_token.kind == SEMICOLON_TOKEN) {
 	    break;
@@ -937,9 +801,6 @@ parse_extrn_statement(int line_number)
 	}
 	tail = name;
 
-	add_local_name(EXTERNAL_LOCAL_NAME, name->name, FALSE, 0,
-		       name_token.line_number);
-
 	comma_token = get_token();
 	if (comma_token.kind == SEMICOLON_TOKEN) {
 	    break;
@@ -959,7 +820,6 @@ parse_labeled_statement(char *name, int line_number)
 
     ret = alloc_statement(LABELED_STATEMENT, line_number);
     ret->u.label_s.name = name;
-    add_label(name, TRUE, line_number);
     ret->u.label_s.following = parse_statement();
 
     return ret;
@@ -992,7 +852,7 @@ parse_case_statement(int line_number)
     Token colon_token;
 
     ret = alloc_statement(CASE_STATEMENT, line_number);
-    ret->u.case_s.constant = parse_constant();
+    ret->u.case_s.expr = constant_to_expression(parse_constant());
     colon_token = get_token();
     check_token(colon_token, COLON_TOKEN);
     ret->u.case_s.following = parse_statement();
@@ -1103,6 +963,8 @@ parse_switch_statement(int line_number)
     check_token(token, RP_TOKEN);
 
     ret->u.switch_s.stmt = parse_statement();
+    ret->u.switch_s.case_list = NULL;
+    ret->u.switch_s.default_case = NULL;
 
     return ret;
 }
@@ -1228,9 +1090,6 @@ parse_function_definition(char *name)
     Statement *stmt;
     Definition *ret;
 
-    st_current_function_local = NULL;
-    st_auto_name_index = 0;
-    st_current_function_name = name;
 
     params = parse_parameters();
     stmt = parse_statement();
@@ -1240,10 +1099,7 @@ parse_function_definition(char *name)
     ret->u.func_def.name = name;
     ret->u.func_def.params = params;
     ret->u.func_def.stmt = stmt;
-    ret->u.func_def.local_names = st_current_function_local;
     ret->next = NULL;
-
-    st_current_function_name = NULL;
 
     return ret;
 }
@@ -1322,7 +1178,7 @@ parse_declaration(char *name)
 		bcp_compile_error(VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
 				  c->line_number);
 	    }
-	    def->u.decl_def.vec_size = c->u.int_value;
+	    def->u.decl_def.vec_size = c->u.int_value + 1;
 	    token = get_token();
 	    check_token(token, RB_TOKEN);
 	}
@@ -1340,6 +1196,7 @@ parse_definition(void)
 {
     Token name_token;
     Token next_token;
+    Definition *ret;
 
     name_token = get_token();
     if (name_token.kind == END_OF_FILE_TOKEN) {
@@ -1348,13 +1205,15 @@ parse_definition(void)
     check_token(name_token, NAME_TOKEN);
 
     next_token = get_token();
-
     if (next_token.kind == LP_TOKEN) {
-	return parse_function_definition(name_token.u.name);
+	ret = parse_function_definition(name_token.u.name);
     } else {
 	unget_token(next_token);
-	return parse_declaration(name_token.u.name);
+	ret = parse_declaration(name_token.u.name);
     }
+    ret->line_number = name_token.line_number;
+
+    return ret;
 }
 
 static Definition *
@@ -1363,12 +1222,6 @@ parse(void)
     Definition *head = NULL;
     Definition *tail = NULL;
     Definition *def;
-
-    st_static_name_index = 0;
-    if (st_static_name != NULL) {
-	free(st_static_name);
-    }
-    st_static_name = NULL;
 
     for (;;) {
 	def = parse_definition();
@@ -1389,13 +1242,16 @@ void
 BCP_compile(MEM_Storage storage, FILE *src_fp)
 {
     Definition *def_head;
+    ParseTree *parse_tree;
     /*
     Token token;
     */
 
     bcp_lex_initialize(storage, src_fp);
     def_head = parse();
-    bcp_dump_tree(stdout, def_head);
+    parse_tree = bcp_fix_tree(def_head);
+    
+    bcp_dump_tree(stdout, parse_tree);
 
     /*
     for (;;) {

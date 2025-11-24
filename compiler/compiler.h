@@ -29,13 +29,27 @@ typedef struct {
     int line_number;
 } Constant;
 
+typedef enum {
+    CONSTANT_IVAL,
+    NAME_IVAL
+} IValKind;
+
+typedef struct IVal_tag {
+    IValKind kind;
+    union {
+	Constant *constant;
+	char *name;
+    } u;
+    struct IVal_tag *next;
+} IVal;
+
 typedef struct {
     char *name;
     Boolean is_vec;
     int vec_size;
     Boolean defined;
-    int value;
-    int index;
+    int address;
+    IVal *initializer;
 } StaticName;
 
 typedef enum {
@@ -54,9 +68,10 @@ typedef struct {
 } InternalLocalName;
 
 typedef struct {
-    int offset;
     Boolean is_vec;
     int vec_size;
+    Boolean is_parameter;
+    int offset;
 } AutoLocalName;
 
 typedef struct LocalName_tag {
@@ -69,6 +84,10 @@ typedef struct LocalName_tag {
     } u;
     struct LocalName_tag *next;
 } LocalName;
+
+typedef struct {
+    StringLiteral str_literal;
+} StringLiteralDef;
 
 typedef enum {
     NAME_EXPRESSION,
@@ -99,6 +118,7 @@ typedef struct {
 
 typedef struct {
     StringLiteral str_literal;
+    int index;
 } StringLiteralExpression;
 
 typedef struct {
@@ -184,6 +204,8 @@ typedef struct {
 struct Expression_tag {
     ExpressionKind kind;
     int line_number;
+    Boolean has_lvalue;
+    Boolean is_lvalue;
     union {
 	NameExpression name_e;
 	IntegerLiteral int_e;
@@ -235,15 +257,24 @@ typedef struct {
 
 typedef struct {
     char *name;
+    LocalName *local_name;
     Statement *following;
 } LabeledStatement;
 
+typedef struct CaseClause_tag {
+    Statement *stmt;
+    int label;
+    struct CaseClause_tag *next;
+} CaseClause;
+
 typedef struct {
-    Constant *constant;
+    Expression *expr;
+    CaseClause *this_case;
     Statement *following;
 } CaseStatement;
 
 typedef struct {
+    CaseClause *this_case;
     Statement *following;
 } DefaultStatement;
 
@@ -265,11 +296,17 @@ typedef struct {
 typedef struct {
     Expression *value;
     Statement *stmt;
+    CaseClause *case_list;
+    CaseClause *default_case;
 } SwitchStatement;
 
 typedef struct {
     Expression *value;
 } GotoStatement;
+
+typedef struct {
+    Statement *outer;
+} BreakStatement;
 
 typedef struct {
     Expression *value;
@@ -293,6 +330,7 @@ struct Statement_tag {
 	WhileStatement while_s;
 	SwitchStatement switch_s;
 	GotoStatement goto_s;
+	BreakStatement break_s;
 	ReturnStatement return_s;
 	ExpressionStatement expr_s;
     } u;
@@ -311,20 +349,6 @@ typedef struct {
     LocalName *local_names;
 } FunctionDefinition;
 
-typedef enum {
-    CONSTANT_IVAL,
-    NAME_IVAL
-} IValKind;
-
-typedef struct IVal_tag {
-    IValKind kind;
-    union {
-	Constant *constant;
-	char *name;
-    } u;
-    struct IVal_tag *next;
-} IVal;
-
 typedef struct {
     char *name;
     Boolean is_vec;
@@ -339,8 +363,17 @@ typedef struct Definition_tag {
 	FunctionDefinition func_def;
 	DeclarationDefinition decl_def;
     } u;
+    int line_number;
     struct Definition_tag *next;
 } Definition;
+
+typedef struct {
+    Definition *def_head;
+    int static_name_count;
+    StaticName *static_name;
+    int string_literal_count;
+    StringLiteralDef *string_literal;
+} ParseTree;
 
 typedef enum {
     BAD_STRING_ESCAPE_SEQUENCE_ERR,
@@ -356,7 +389,11 @@ typedef enum {
     NOT_OCTAL_ERR,
     INVALID_CHARACTER_ERR,
     VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
-    NAME_ALREADY_DEFINED_ERR
+    NAME_ALREADY_DEFINED_ERR,
+    VECTOR_SIZE_IS_NOT_DEFINED_ERR,
+    OPERAND_DOES_NOT_HAVE_LVALUE_ERR,
+    CASE_WITHOUT_SWITCH_ERR,
+    BREAK_WITHOUT_SWITCH_OR_WHILE_ERR
 } CompileErrorCode;
 
 /* lexer.c */
@@ -365,8 +402,11 @@ void bcp_lex_initialize(MEM_Storage storage, FILE *src_fp);
 Token bcp_get_token(void);
 extern char *bcp_token_str[];
 
+/* fix_tree.c */
+ParseTree *bcp_fix_tree(Definition *def_head);
+
 /*dump_tree.c */
-void bcp_dump_tree(FILE *fp, Definition *def_head);
+void bcp_dump_tree(FILE *fp, ParseTree *parse_tree);
 
 /* message.c */
 void bcp_compile_error(CompileErrorCode code, int line_number, ...);

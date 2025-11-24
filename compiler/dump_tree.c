@@ -302,7 +302,7 @@ dump_case_statement(FILE *fp, Statement *stmt, int level)
 {
     out_indent(fp, level);
     fprintf(fp, "case ");
-    dump_constant(fp, stmt->u.case_s.constant);
+    dump_expression(fp, stmt->u.case_s.expr, level);
     fprintf(fp, ":\n");
 
     dump_statement(fp, stmt->u.case_s.following, level);
@@ -475,6 +475,42 @@ dump_statement(FILE *fp, Statement *stmt, int level)
 }
 
 static void
+dump_local_names(FILE *fp, LocalName *head, int level)
+{
+    LocalName *pos;
+    int idx;
+
+    fprintf(fp, "***** local names *****\n");
+    idx = 0;
+    for (pos = head; pos != NULL; pos = pos->next) {
+	out_indent(fp, level);
+	fprintf(fp, "%d %s:\n", idx, pos->name);
+
+	out_indent(fp, level);
+	switch (pos->kind) {
+	case EXTERNAL_LOCAL_NAME:
+	    fprintf(fp, "  EXTERNAL index..%d\n",
+		    pos->u.ext_ln.static_name_index);
+	    break;
+	case INTERNAL_LOCAL_NAME:
+	    fprintf(fp, "  INTERNAL index..%d %s\n",
+		    pos->u.int_ln.static_name_index,
+		    pos->u.int_ln.defined ? "defined" : "undefined");
+	    break;
+	case AUTO_LOCAL_NAME:
+	    fprintf(fp, "  AUTO offset..%d is_vec..%s vec_size..%d\n",
+		    pos->u.auto_ln.offset,
+		    pos->u.auto_ln.is_vec ? "true" : "false",
+		    pos->u.auto_ln.is_vec ? pos->u.auto_ln.vec_size : 0);
+	    break;
+	default:
+	    assert(0);
+	}
+	idx++;
+    }
+}
+
+static void
 dump_function_definition(FILE *fp, Definition *def, int level)
 {
     out_indent(fp, level);
@@ -483,6 +519,7 @@ dump_function_definition(FILE *fp, Definition *def, int level)
     fprintf(fp, ")\n");
 
     dump_statement(fp, def->u.func_def.stmt, level);
+    dump_local_names(fp, def->u.func_def.local_names, level);
 }
 
 static void
@@ -515,8 +552,8 @@ dump_declaration(FILE *fp, Definition *def, int level)
     fprintf(fp, "\n");
 }
 
-void
-bcp_dump_tree(FILE *fp, Definition* def_head)
+static void
+dump_tree(FILE *fp, Definition *def_head)
 {
     Definition *def;
 
@@ -528,4 +565,28 @@ bcp_dump_tree(FILE *fp, Definition* def_head)
 	    dump_declaration(fp, def, 0);
 	}
     }
+}
+
+static void
+dump_static_names(FILE *fp, int count, StaticName *names)
+{
+    int i;
+
+    fprintf(fp, "**** static names ******\n");
+
+    for (i = 0; i < count; i++) {
+	fprintf(fp, "name[%d] %s:\n", i, names[i].name);
+	fprintf(fp, "  is_vec..%s vec_size..%d %s\n",
+		names[i].is_vec ? "true" : "false",
+		names[i].vec_size,
+		names[i].defined ? "defined" : "undefined");
+    }
+}
+
+void
+bcp_dump_tree(FILE *fp, ParseTree *parse_tree)
+{
+    dump_tree(fp, parse_tree->def_head);
+    dump_static_names(fp, parse_tree->static_name_count,
+		      parse_tree->static_name);
 }
