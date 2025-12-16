@@ -18,8 +18,11 @@ static char *st_messages[] = {
     "invalid character.",
     "vector size must be an integer.(%s)",
     "name %s is already defined.",
+    "name %s not found.",
+    "name %s not defined.",
+    "vector size is not defined.",
     "operand doesn\'t have left value.",
-    "case without switch."
+    "case without switch.",
     "break without switch or while."
 };
 

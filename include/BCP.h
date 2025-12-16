@@ -2,6 +2,6 @@
 #define BCP_H_INCLUDED
 #include "MEM.h"
 
-void BCP_compile(MEM_Storage storage, FILE *src_fp);
+int *BCP_compile(FILE *src_fp, int *main_address);
 
 #endif /* BCP_H_INCLUDED */

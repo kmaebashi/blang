@@ -1,15 +1,22 @@
 #include "MEM.h"
 #include "BCP.h"
+#include "BVM.h"
 
 int
 main(int argc, char **argv)
 {
     FILE *src_fp;
-    MEM_Storage storage;
+    int main_address;
+    int *memory;
 
-    storage = MEM_open_storage(4096);
-    src_fp = fopen("name_test.b", "r");
-    BCP_compile(storage, src_fp);
+    if (argc != 2) {
+        fprintf(stderr, "usage: %s filename.b", argv[0]);
+    }
+
+    src_fp = fopen(argv[1], "r");
+
+    memory = BCP_compile(src_fp, &main_address);
+    BVM_execute(memory, main_address);
 
     return 0;
 }

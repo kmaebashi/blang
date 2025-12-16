@@ -5,11 +5,11 @@ OBJS = \
   bvm/bvm.o\
   memory/mem.o
 CFLAGS = -c -g -DDEBUG -Wall -ansi -pedantic -Wswitch-enum
-TARGET = lexer
+TARGET = blang
 
 .PHONY: all $(SUBDIRS)
 
-bcomp: $(SUBDIRS) main.o
+$(TARGET): $(SUBDIRS) main.o
 	$(CC) $(OBJS) -o $@ -lm
 
 $(SUBDIRS):
@@ -18,4 +18,4 @@ $(SUBDIRS):
 .c.o:
 	$(CC) $(CFLAGS) $*.c -I./include
 ############################################################
-main.o: main.c include/MEM.h include/BCP.h include/MEM.h
+main.o: main.c include/MEM.h include/BCP.h include/MEM.h include/BVM.h

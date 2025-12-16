@@ -21,10 +21,10 @@ get_token(void)
     Token ret;
 
     if (st_look_ahead_token_count > 0) {
-	ret = st_look_ahead_token_stack[st_look_ahead_token_count - 1];
-	st_look_ahead_token_count--;
+        ret = st_look_ahead_token_stack[st_look_ahead_token_count - 1];
+        st_look_ahead_token_count--;
     } else {
-	ret = bcp_get_token();
+        ret = bcp_get_token();
     }
 
     return ret;
@@ -33,22 +33,22 @@ get_token(void)
 static void check_token(Token token, TokenKind kind)
 {
     if (token.kind != kind) {
-	bcp_compile_error(UNEXPECTED_TOKEN_ERR,
-			  token.line_number,
-			  bcp_token_str[token.kind],
-			  bcp_token_str[kind]);
+        bcp_compile_error(UNEXPECTED_TOKEN_ERR,
+                          token.line_number,
+                          bcp_token_str[token.kind],
+                          bcp_token_str[kind]);
     }
 }
 
 static void check_token2(Token token,
-			 TokenKind expected1, TokenKind expected2)
+                         TokenKind expected1, TokenKind expected2)
 {
     if (token.kind != expected1 && token.kind != expected2) {
-	bcp_compile_error(UNEXPECTED_TOKEN2_ERR,
-			  token.line_number,
-			  bcp_token_str[token.kind],
-			  bcp_token_str[expected1],
-			  bcp_token_str[expected2]);
+        bcp_compile_error(UNEXPECTED_TOKEN2_ERR,
+                          token.line_number,
+                          bcp_token_str[token.kind],
+                          bcp_token_str[expected1],
+                          bcp_token_str[expected2]);
     }
 }
 
@@ -63,25 +63,25 @@ static NameItem *parse_parameters(void)
 
     name_token = get_token();
     if (name_token.kind == RP_TOKEN) {
-	return NULL;
+        return NULL;
     }
     for (;;) {
-	check_token(name_token, NAME_TOKEN);
-	param = bcp_malloc(sizeof(NameItem));
-	param->name = name_token.u.name;
-	param->next = NULL;
-	if (head == NULL) {
-	    head = param;
-	} else {
-	    tail->next = param;
-	}
-	tail = param;
-	comma_token = get_token();
-	if (comma_token.kind == RP_TOKEN) {
-	    break;
-	}
-	check_token(comma_token, COMMA_TOKEN);
-	name_token = get_token();
+        check_token(name_token, NAME_TOKEN);
+        param = bcp_malloc(sizeof(NameItem));
+        param->name = name_token.u.name;
+        param->next = NULL;
+        if (head == NULL) {
+            head = param;
+        } else {
+            tail->next = param;
+        }
+        tail = param;
+        comma_token = get_token();
+        if (comma_token.kind == RP_TOKEN) {
+            break;
+        }
+        check_token(comma_token, COMMA_TOKEN);
+        name_token = get_token();
     }
 
     return head;
@@ -109,17 +109,17 @@ parse_constant(void)
     token = get_token();
     ret->line_number = token.line_number;
     if (token.kind == INT_LITERAL_TOKEN) {
-	ret->kind = INT_CONSTANT;
-	ret->u.int_value = token.u.int_value;
+        ret->kind = INT_CONSTANT;
+        ret->u.int_value = token.u.int_value;
     } else if (token.kind == STRING_LITERAL_TOKEN) {
-	ret->kind = STRING_CONSTANT;
-	ret->u.str_literal = token.u.str_literal;
+        ret->kind = STRING_CONSTANT;
+        ret->u.str_literal = token.u.str_literal;
     } else if (token.kind == CHARS_TOKEN) {
-	ret->kind = CHARS_CONSTANT;
-	ret->u.chars = token.u.chars;
+        ret->kind = CHARS_CONSTANT;
+        ret->u.chars = token.u.chars;
     } else {
-	bcp_compile_error(UNEXPECTED_TOKEN0_ERR, token.line_number,
-			  bcp_token_str[token.kind]);
+        bcp_compile_error(UNEXPECTED_TOKEN0_ERR, token.line_number,
+                          bcp_token_str[token.kind]);
     }
 
     return ret;
@@ -147,17 +147,17 @@ constant_to_expression(Constant *c)
 
     switch (c->kind) {
     case INT_CONSTANT:
-	expr = alloc_expression(INTEGER_LITERAL, c->line_number);
-	expr->u.int_e.int_value = c->u.int_value;
-	break;
+        expr = alloc_expression(INTEGER_LITERAL, c->line_number);
+        expr->u.int_e.int_value = c->u.int_value;
+        break;
     case CHARS_CONSTANT:
-	expr = alloc_expression(CHARS_LITERAL, c->line_number);
-	expr->u.chars_e.chars = c->u.chars;
-	break;
+        expr = alloc_expression(CHARS_LITERAL, c->line_number);
+        expr->u.chars_e.chars = c->u.chars;
+        break;
     case STRING_CONSTANT:
-	expr = alloc_expression(STRING_LITERAL, c->line_number);
-	expr->u.str_e.str_literal = c->u.str_literal;
-	break;
+        expr = alloc_expression(STRING_LITERAL, c->line_number);
+        expr->u.str_e.str_literal = c->u.str_literal;
+        break;
     }
 
     return expr;
@@ -171,24 +171,24 @@ parse_primary_expression()
     Expression *expr;
 
     if (first_token.kind == NAME_TOKEN) {
-	expr = alloc_expression(NAME_EXPRESSION, first_token.line_number);
-	expr->u.name_e.name = first_token.u.name;
+        expr = alloc_expression(NAME_EXPRESSION, first_token.line_number);
+        expr->u.name_e.name = first_token.u.name;
     } else if (first_token.kind == INT_LITERAL_TOKEN) {
-	expr = alloc_expression(INTEGER_LITERAL, first_token.line_number);
-	expr->u.int_e.int_value = first_token.u.int_value;
+        expr = alloc_expression(INTEGER_LITERAL, first_token.line_number);
+        expr->u.int_e.int_value = first_token.u.int_value;
     } else if (first_token.kind == CHARS_TOKEN) {
-	expr = alloc_expression(CHARS_LITERAL, first_token.line_number);
-	expr->u.chars_e.chars = first_token.u.chars;
+        expr = alloc_expression(CHARS_LITERAL, first_token.line_number);
+        expr->u.chars_e.chars = first_token.u.chars;
     } else if (first_token.kind == STRING_LITERAL_TOKEN) {
-	expr = alloc_expression(STRING_LITERAL, first_token.line_number);
-	expr->u.str_e.str_literal = first_token.u.str_literal;
+        expr = alloc_expression(STRING_LITERAL, first_token.line_number);
+        expr->u.str_e.str_literal = first_token.u.str_literal;
     } else if (first_token.kind == LP_TOKEN) {
-	expr = parse_expression();
-	end_token = get_token();
-	check_token(end_token, RP_TOKEN);
+        expr = parse_expression();
+        end_token = get_token();
+        check_token(end_token, RP_TOKEN);
     } else {
-	bcp_compile_error(UNEXPECTED_TOKEN0_ERR, first_token.line_number,
-			  bcp_token_str[first_token.kind]);
+        bcp_compile_error(UNEXPECTED_TOKEN0_ERR, first_token.line_number,
+                          bcp_token_str[first_token.kind]);
     }
 
     return expr;
@@ -205,27 +205,27 @@ parse_arguments()
 
     token = get_token();
     if (token.kind == RP_TOKEN) {
-	return NULL;
+        return NULL;
     }
     unget_token(token);
     for (;;) {
-	expr = parse_expression();
-	arg = bcp_malloc(sizeof(Argument));
-	arg->expr = expr;
-	arg->next = NULL;
-	if (head == NULL) {
-	    head = arg;
-	} else {
-	    tail->next = arg;
-	}
-	tail = arg;
+        expr = parse_expression();
+        arg = bcp_malloc(sizeof(Argument));
+        arg->expr = expr;
+        arg->next = NULL;
+        if (head == NULL) {
+            head = arg;
+        } else {
+            tail->next = arg;
+        }
+        tail = arg;
 
-	token = get_token();
-	if (token.kind == RP_TOKEN) {
-	    break;
-	} else {
-	    check_token(token, COMMA_TOKEN);
-	}
+        token = get_token();
+        if (token.kind == RP_TOKEN) {
+            break;
+        } else {
+            check_token(token, COMMA_TOKEN);
+        }
     }
     return head;
 }
@@ -240,34 +240,34 @@ parse_postfix_expression()
     operand = parse_primary_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == LP_TOKEN) {
-	    expr = alloc_expression(FUNCTION_CALL_EXPRESSION,
-				    token.line_number);
-	    expr->u.func_call_e.func = operand;
-	    expr->u.func_call_e.args = parse_arguments();
-	    operand = expr;
-	} else if (token.kind == LB_TOKEN) {
-	    expr = alloc_expression(INDEX_EXPRESSION, token.line_number);
-	    expr->u.index_e.vector = operand;
-	    expr->u.index_e.index = parse_expression();
-	    token = get_token();
-	    check_token(token, RB_TOKEN);
-	    operand = expr;
-	} else if (token.kind == INC_TOKEN) {
-	    expr = alloc_expression(UNARY_EXPRESSION, token.line_number);
-	    expr->u.unary_e.operator = POST_INC_OPERATOR;
-	    expr->u.unary_e.operand = operand;
-	    operand = expr;
-	} else if (token.kind == DEC_TOKEN) {
-	    expr = alloc_expression(UNARY_EXPRESSION, token.line_number);
-	    expr->u.unary_e.operator = POST_DEC_OPERATOR;
-	    expr->u.unary_e.operand = operand;
-	    operand = expr;
-	} else {
-	    unget_token(token);
-	    return operand;
-	}
+        token = get_token();
+        if (token.kind == LP_TOKEN) {
+            expr = alloc_expression(FUNCTION_CALL_EXPRESSION,
+                                    token.line_number);
+            expr->u.func_call_e.func = operand;
+            expr->u.func_call_e.args = parse_arguments();
+            operand = expr;
+        } else if (token.kind == LB_TOKEN) {
+            expr = alloc_expression(INDEX_EXPRESSION, token.line_number);
+            expr->u.index_e.vector = operand;
+            expr->u.index_e.index = parse_expression();
+            token = get_token();
+            check_token(token, RB_TOKEN);
+            operand = expr;
+        } else if (token.kind == INC_TOKEN) {
+            expr = alloc_expression(UNARY_EXPRESSION, token.line_number);
+            expr->u.unary_e.operator = POST_INC_OPERATOR;
+            expr->u.unary_e.operand = operand;
+            operand = expr;
+        } else if (token.kind == DEC_TOKEN) {
+            expr = alloc_expression(UNARY_EXPRESSION, token.line_number);
+            expr->u.unary_e.operator = POST_DEC_OPERATOR;
+            expr->u.unary_e.operand = operand;
+            operand = expr;
+        } else {
+            unget_token(token);
+            return operand;
+        }
     }
 
     return expr;
@@ -283,22 +283,22 @@ parse_unary_expression()
     
     token = get_token();
     if (token.kind == ASTERISK_TOKEN) {
-	op = INDIRECTION_OPERATOR;
+        op = INDIRECTION_OPERATOR;
     } else if (token.kind == AMPERSAND_TOKEN) {
-	op = ADDRESS_OPERATOR;
+        op = ADDRESS_OPERATOR;
     } else if (token.kind == MINUS_TOKEN) {
-	op = MINUS_OPERATOR;
+        op = MINUS_OPERATOR;
     } else if (token.kind == EXCLAMATION_TOKEN) {
-	op = LOGICAL_NOT_OPERATOR;
+        op = LOGICAL_NOT_OPERATOR;
     } else if (token.kind == INC_TOKEN) {
-	op = PRE_INC_OPERATOR;
+        op = PRE_INC_OPERATOR;
     } else if (token.kind == DEC_TOKEN) {
-	op = PRE_DEC_OPERATOR;
+        op = PRE_DEC_OPERATOR;
     } else if (token.kind == BIT_NOT_TOKEN) {
-	op = BIT_NOT_OPERATOR;
+        op = BIT_NOT_OPERATOR;
     } else {
-	unget_token(token);
-	return parse_postfix_expression();
+        unget_token(token);
+        return parse_postfix_expression();
     }
     operand = parse_unary_expression();
     expr = alloc_expression(UNARY_EXPRESSION, token.line_number);
@@ -310,25 +310,25 @@ parse_unary_expression()
 
 static Expression *
 fold_multiplicative_expression(BinaryOperator op,
-			       Expression *left, Expression *right,
-			       int line_number)
+                               Expression *left, Expression *right,
+                               int line_number)
 {
     if (left->kind == INTEGER_LITERAL && right->kind == INTEGER_LITERAL) {
-	Expression *expr;
+        Expression *expr;
 
-	expr = alloc_expression(INTEGER_LITERAL, line_number);
-	if (op == MUL_OPERATOR) {
-	    expr->u.int_e.int_value
-		= left->u.int_e.int_value * right->u.int_e.int_value;
-	} else if (op == DIV_OPERATOR) {
-	    expr->u.int_e.int_value
-		= left->u.int_e.int_value / right->u.int_e.int_value;
-	} else {
-	    assert(op == MOD_OPERATOR);
-	    expr->u.int_e.int_value
-		= left->u.int_e.int_value % right->u.int_e.int_value;
-	}
-	return expr;
+        expr = alloc_expression(INTEGER_LITERAL, line_number);
+        if (op == MUL_OPERATOR) {
+            expr->u.int_e.int_value
+                = left->u.int_e.int_value * right->u.int_e.int_value;
+        } else if (op == DIV_OPERATOR) {
+            expr->u.int_e.int_value
+                = left->u.int_e.int_value / right->u.int_e.int_value;
+        } else {
+            assert(op == MOD_OPERATOR);
+            expr->u.int_e.int_value
+                = left->u.int_e.int_value % right->u.int_e.int_value;
+        }
+        return expr;
     }
     return NULL;
 }
@@ -345,27 +345,27 @@ parse_multiplicative_expression()
     left = parse_unary_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == ASTERISK_TOKEN) {
-	    op = MUL_OPERATOR;
-	} else if (token.kind == SLASH_TOKEN) {
-	    op = DIV_OPERATOR;
-	} else if (token.kind == PERCENT_TOKEN) {
-	    op = MOD_OPERATOR;
-	} else {
-	    unget_token(token);
-	    return left;
-	}
-	right = parse_unary_expression();
-	expr = fold_multiplicative_expression(op, left, right,
-					      token.line_number);
-	if (expr == NULL) {
-	    expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	    expr->u.binary_e.operator = op;
-	    expr->u.binary_e.left = left;
-	    expr->u.binary_e.right = right;
-	}
-	left = expr;
+        token = get_token();
+        if (token.kind == ASTERISK_TOKEN) {
+            op = MUL_OPERATOR;
+        } else if (token.kind == SLASH_TOKEN) {
+            op = DIV_OPERATOR;
+        } else if (token.kind == PERCENT_TOKEN) {
+            op = MOD_OPERATOR;
+        } else {
+            unget_token(token);
+            return left;
+        }
+        right = parse_unary_expression();
+        expr = fold_multiplicative_expression(op, left, right,
+                                              token.line_number);
+        if (expr == NULL) {
+            expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+            expr->u.binary_e.operator = op;
+            expr->u.binary_e.left = left;
+            expr->u.binary_e.right = right;
+        }
+        left = expr;
     }
 
     return left;
@@ -373,23 +373,23 @@ parse_multiplicative_expression()
 
 static Expression *
 fold_additive_expression(BinaryOperator op,
-			 Expression *left, Expression *right,
-			 int line_number)
+                         Expression *left, Expression *right,
+                         int line_number)
 {
     if (left->kind == INTEGER_LITERAL && right->kind == INTEGER_LITERAL) {
-	Expression *expr;
+        Expression *expr;
 
-	expr = alloc_expression(INTEGER_LITERAL, line_number);
-	if (op == ADD_OPERATOR) {
-	    expr->u.int_e.int_value
-		= left->u.int_e.int_value + right->u.int_e.int_value;
-	} else {
-	    assert(op == SUB_OPERATOR);
-	    expr->u.int_e.int_value
-		= left->u.int_e.int_value - right->u.int_e.int_value;
-	}
+        expr = alloc_expression(INTEGER_LITERAL, line_number);
+        if (op == ADD_OPERATOR) {
+            expr->u.int_e.int_value
+                = left->u.int_e.int_value + right->u.int_e.int_value;
+        } else {
+            assert(op == SUB_OPERATOR);
+            expr->u.int_e.int_value
+                = left->u.int_e.int_value - right->u.int_e.int_value;
+        }
 
-	return expr;
+        return expr;
     }
     return NULL;
 }
@@ -406,25 +406,25 @@ parse_additive_expression()
     left = parse_multiplicative_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == PLUS_TOKEN) {
-	    op = ADD_OPERATOR;
-	} else if (token.kind == MINUS_TOKEN) {
-	    op = SUB_OPERATOR;
-	} else {
-	    unget_token(token);
-	    return left;
-	}
-	right = parse_multiplicative_expression();
+        token = get_token();
+        if (token.kind == PLUS_TOKEN) {
+            op = ADD_OPERATOR;
+        } else if (token.kind == MINUS_TOKEN) {
+            op = SUB_OPERATOR;
+        } else {
+            unget_token(token);
+            return left;
+        }
+        right = parse_multiplicative_expression();
 
-	expr = fold_additive_expression(op, left, right, token.line_number);
-	if (expr == NULL) {
-	    expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	    expr->u.binary_e.operator = op;
-	    expr->u.binary_e.left = left;
-	    expr->u.binary_e.right = right;
-	}
-	left = expr;
+        expr = fold_additive_expression(op, left, right, token.line_number);
+        if (expr == NULL) {
+            expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+            expr->u.binary_e.operator = op;
+            expr->u.binary_e.left = left;
+            expr->u.binary_e.right = right;
+        }
+        left = expr;
     }
 
     return left;
@@ -442,21 +442,21 @@ parse_shift_expression()
     left = parse_additive_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == LEFT_BIT_SHIFT_TOKEN) {
-	    op = LEFT_SHIFT_OPERATOR;
-	} else if (token.kind == RIGHT_BIT_SHIFT_TOKEN) {
-	    op = RIGHT_SHIFT_OPERATOR;
-	} else {
-	    unget_token(token);
-	    return left;
-	}
-	right = parse_additive_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = op;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        token = get_token();
+        if (token.kind == LEFT_BIT_SHIFT_TOKEN) {
+            op = LEFT_SHIFT_OPERATOR;
+        } else if (token.kind == RIGHT_BIT_SHIFT_TOKEN) {
+            op = RIGHT_SHIFT_OPERATOR;
+        } else {
+            unget_token(token);
+            return left;
+        }
+        right = parse_additive_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = op;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -475,25 +475,25 @@ parse_relational_expression()
     left = parse_shift_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == LT_TOKEN) {
-	    op = LT_OPERATOR;
-	} else if (token.kind == LE_TOKEN) {
-	    op = LE_OPERATOR;
-	} else if (token.kind == GT_TOKEN) {
-	    op = GT_OPERATOR;
-	} else if (token.kind == GE_TOKEN) {
-	    op = GE_OPERATOR;
-	} else {
-	    unget_token(token);
-	    return left;
-	}
-	right = parse_shift_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = op;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        token = get_token();
+        if (token.kind == LT_TOKEN) {
+            op = LT_OPERATOR;
+        } else if (token.kind == LE_TOKEN) {
+            op = LE_OPERATOR;
+        } else if (token.kind == GT_TOKEN) {
+            op = GT_OPERATOR;
+        } else if (token.kind == GE_TOKEN) {
+            op = GE_OPERATOR;
+        } else {
+            unget_token(token);
+            return left;
+        }
+        right = parse_shift_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = op;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -512,21 +512,21 @@ parse_equality_expression()
     left = parse_relational_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == EQ_TOKEN) {
-	    op = EQ_OPERATOR;
-	} else if (token.kind == NE_TOKEN) {
-	    op = NE_OPERATOR;
-	} else {
-	    unget_token(token);
-	    return left;
-	}
-	right = parse_relational_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = op;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        token = get_token();
+        if (token.kind == EQ_TOKEN) {
+            op = EQ_OPERATOR;
+        } else if (token.kind == NE_TOKEN) {
+            op = NE_OPERATOR;
+        } else {
+            unget_token(token);
+            return left;
+        }
+        right = parse_relational_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = op;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -543,18 +543,18 @@ parse_and_expression()
     left = parse_equality_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind != AMPERSAND_TOKEN) {
-	    unget_token(token);
-	    return left;
-	}
+        token = get_token();
+        if (token.kind != AMPERSAND_TOKEN) {
+            unget_token(token);
+            return left;
+        }
 
-	right = parse_equality_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = BIT_AND_OPERATOR;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        right = parse_equality_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = BIT_AND_OPERATOR;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -571,18 +571,18 @@ parse_xor_expression()
     left = parse_and_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind != BIT_XOR_TOKEN) {
-	    unget_token(token);
-	    return left;
-	}
+        token = get_token();
+        if (token.kind != BIT_XOR_TOKEN) {
+            unget_token(token);
+            return left;
+        }
 
-	right = parse_and_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = BIT_XOR_OPERATOR;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        right = parse_and_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = BIT_XOR_OPERATOR;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -599,18 +599,18 @@ parse_or_expression()
     left = parse_xor_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind != BIT_OR_TOKEN) {
-	    unget_token(token);
-	    return left;
-	}
+        token = get_token();
+        if (token.kind != BIT_OR_TOKEN) {
+            unget_token(token);
+            return left;
+        }
 
-	right = parse_xor_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = BIT_OR_OPERATOR;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        right = parse_xor_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = BIT_OR_OPERATOR;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -630,20 +630,20 @@ parse_conditional_expression()
 
     question_token = get_token();
     if (question_token.kind != QUESTION_TOKEN) {
-	unget_token(question_token);
-	return left;
+        unget_token(question_token);
+        return left;
     }
     center = parse_conditional_expression();
 
     colon_token = get_token();
     if (colon_token.kind != COLON_TOKEN) {
-	bcp_compile_error(UNEXPECTED_TOKEN_ERR, colon_token.line_number,
-			  bcp_token_str[colon_token.kind],
-			  bcp_token_str[COLON_TOKEN]);
+        bcp_compile_error(UNEXPECTED_TOKEN_ERR, colon_token.line_number,
+                          bcp_token_str[colon_token.kind],
+                          bcp_token_str[COLON_TOKEN]);
     }
     right = parse_conditional_expression();
     expr = alloc_expression(CONDITIONAL_EXPRESSION,
-			    question_token.line_number);
+                            question_token.line_number);
     expr->u.cond_e.cond = left;
     expr->u.cond_e.expr1 = center;
     expr->u.cond_e.expr2 = right;
@@ -663,49 +663,49 @@ parse_assignment_expression()
     left = parse_conditional_expression();
 
     for (;;) {
-	token = get_token();
-	if (token.kind == ASSIGN_TOKEN) {
-	    op = ASSIGN_OPERATOR;
-	} else if (token.kind == ADD_ASSIGN_TOKEN) {
-	    op = ADD_ASSIGN_OPERATOR;
-	} else if (token.kind == SUB_ASSIGN_TOKEN) {
-	    op = SUB_ASSIGN_OPERATOR;
-	} else if (token.kind == MUL_ASSIGN_TOKEN) {
-	    op = MUL_ASSIGN_OPERATOR;
-	} else if (token.kind == DIV_ASSIGN_TOKEN) {
-	    op = DIV_ASSIGN_OPERATOR;
-	} else if (token.kind == MOD_ASSIGN_TOKEN) {
-	    op = MOD_ASSIGN_OPERATOR;
-	} else if (token.kind == LEFT_SHIFT_ASSIGN_TOKEN) {
-	    op = LEFT_SHIFT_ASSIGN_OPERATOR;
-	} else if (token.kind == RIGHT_SHIFT_ASSIGN_TOKEN) {
-	    op = RIGHT_SHIFT_ASSIGN_OPERATOR;
-	} else if (token.kind == LT_ASSIGN_TOKEN) {
-	    op = LT_ASSIGN_OPERATOR;
-	} else if (token.kind == LE_ASSIGN_TOKEN) {
-	    op = LE_ASSIGN_OPERATOR;
-	} else if (token.kind == GT_ASSIGN_TOKEN) {
-	    op = GT_ASSIGN_OPERATOR;
-	} else if (token.kind == GE_ASSIGN_TOKEN) {
-	    op = GE_ASSIGN_OPERATOR;
-	} else if (token.kind == EQ_ASSIGN_TOKEN) {
-	    op = EQ_ASSIGN_OPERATOR;
-	} else if (token.kind == NE_ASSIGN_TOKEN) {
-	    op = NE_ASSIGN_OPERATOR;
-	} else if (token.kind == BIT_AND_ASSIGN_TOKEN) {
-	    op = BIT_AND_ASSIGN_OPERATOR;
-	} else if (token.kind == BIT_OR_ASSIGN_TOKEN) {
-	    op = BIT_OR_ASSIGN_OPERATOR;
-	} else {
-	    unget_token(token);
-	    return left;
-	}
-	right = parse_conditional_expression();
-	expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
-	expr->u.binary_e.operator = op;
-	expr->u.binary_e.left = left;
-	expr->u.binary_e.right = right;
-	left = expr;
+        token = get_token();
+        if (token.kind == ASSIGN_TOKEN) {
+            op = ASSIGN_OPERATOR;
+        } else if (token.kind == ADD_ASSIGN_TOKEN) {
+            op = ADD_ASSIGN_OPERATOR;
+        } else if (token.kind == SUB_ASSIGN_TOKEN) {
+            op = SUB_ASSIGN_OPERATOR;
+        } else if (token.kind == MUL_ASSIGN_TOKEN) {
+            op = MUL_ASSIGN_OPERATOR;
+        } else if (token.kind == DIV_ASSIGN_TOKEN) {
+            op = DIV_ASSIGN_OPERATOR;
+        } else if (token.kind == MOD_ASSIGN_TOKEN) {
+            op = MOD_ASSIGN_OPERATOR;
+        } else if (token.kind == LEFT_SHIFT_ASSIGN_TOKEN) {
+            op = LEFT_SHIFT_ASSIGN_OPERATOR;
+        } else if (token.kind == RIGHT_SHIFT_ASSIGN_TOKEN) {
+            op = RIGHT_SHIFT_ASSIGN_OPERATOR;
+        } else if (token.kind == LT_ASSIGN_TOKEN) {
+            op = LT_ASSIGN_OPERATOR;
+        } else if (token.kind == LE_ASSIGN_TOKEN) {
+            op = LE_ASSIGN_OPERATOR;
+        } else if (token.kind == GT_ASSIGN_TOKEN) {
+            op = GT_ASSIGN_OPERATOR;
+        } else if (token.kind == GE_ASSIGN_TOKEN) {
+            op = GE_ASSIGN_OPERATOR;
+        } else if (token.kind == EQ_ASSIGN_TOKEN) {
+            op = EQ_ASSIGN_OPERATOR;
+        } else if (token.kind == NE_ASSIGN_TOKEN) {
+            op = NE_ASSIGN_OPERATOR;
+        } else if (token.kind == BIT_AND_ASSIGN_TOKEN) {
+            op = BIT_AND_ASSIGN_OPERATOR;
+        } else if (token.kind == BIT_OR_ASSIGN_TOKEN) {
+            op = BIT_OR_ASSIGN_OPERATOR;
+        } else {
+            unget_token(token);
+            return left;
+        }
+        right = parse_conditional_expression();
+        expr = alloc_expression(BINARY_EXPRESSION, token.line_number);
+        expr->u.binary_e.operator = op;
+        expr->u.binary_e.left = left;
+        expr->u.binary_e.right = right;
+        left = expr;
     }
 
     return left;
@@ -734,40 +734,40 @@ parse_auto_statement(int line_number)
     ret = alloc_statement(AUTO_STATEMENT, line_number);
 
     for (;;) {
-	name_token = get_token();
-	check_token(name_token, NAME_TOKEN);
-	nc = bcp_malloc(sizeof(NameConstant));
-	nc->name = name_token.u.name;
-	lb_token = get_token();
-	if (lb_token.kind == LB_TOKEN) {
-	    Constant *c = parse_constant();
-	    if (c->kind != INT_CONSTANT) {
-		bcp_compile_error(VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
-				  c->line_number);
-	    }
-	    nc->is_vec = TRUE;
-	    nc->vec_size = c->u.int_value + 1;
-	    rb_token = get_token();
-	    check_token(rb_token, RB_TOKEN);
-	} else {
-	    unget_token(lb_token);
-	    nc->is_vec = FALSE;
-	}
-	nc->next = NULL;
+        name_token = get_token();
+        check_token(name_token, NAME_TOKEN);
+        nc = bcp_malloc(sizeof(NameConstant));
+        nc->name = name_token.u.name;
+        lb_token = get_token();
+        if (lb_token.kind == LB_TOKEN) {
+            Constant *c = parse_constant();
+            if (c->kind != INT_CONSTANT) {
+                bcp_compile_error(VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
+                                  c->line_number);
+            }
+            nc->is_vec = TRUE;
+            nc->vec_size = c->u.int_value + 1;
+            rb_token = get_token();
+            check_token(rb_token, RB_TOKEN);
+        } else {
+            unget_token(lb_token);
+            nc->is_vec = FALSE;
+        }
+        nc->next = NULL;
 
-	if (head == NULL) {
-	    head = nc;
-	} else {
-	    tail->next = nc;
-	}
-	tail = nc;
+        if (head == NULL) {
+            head = nc;
+        } else {
+            tail->next = nc;
+        }
+        tail = nc;
 
-	next_token = get_token();
-	check_token2(next_token, COMMA_TOKEN, SEMICOLON_TOKEN);
+        next_token = get_token();
+        check_token2(next_token, COMMA_TOKEN, SEMICOLON_TOKEN);
 
-	if (next_token.kind == SEMICOLON_TOKEN) {
-	    break;
-	}
+        if (next_token.kind == SEMICOLON_TOKEN) {
+            break;
+        }
     }
     ret->u.auto_s.name_constant = head;
     ret->u.auto_s.following = parse_statement();
@@ -788,24 +788,24 @@ parse_extrn_statement(int line_number)
     ret = alloc_statement(EXTRN_STATEMENT, line_number);
 
     for (;;) {
-	name_token = get_token();
-	check_token(name_token, NAME_TOKEN);
+        name_token = get_token();
+        check_token(name_token, NAME_TOKEN);
 
-	name = bcp_malloc(sizeof(NameItem));
-	name->name = name_token.u.name;
-	name->next = NULL;
-	if (head == NULL) {
-	    head = name;
-	} else {
-	    tail->next = name;
-	}
-	tail = name;
+        name = bcp_malloc(sizeof(NameItem));
+        name->name = name_token.u.name;
+        name->next = NULL;
+        if (head == NULL) {
+            head = name;
+        } else {
+            tail->next = name;
+        }
+        tail = name;
 
-	comma_token = get_token();
-	if (comma_token.kind == SEMICOLON_TOKEN) {
-	    break;
-	}
-	check_token(comma_token, COMMA_TOKEN);
+        comma_token = get_token();
+        if (comma_token.kind == SEMICOLON_TOKEN) {
+            break;
+        }
+        check_token(comma_token, COMMA_TOKEN);
     }
     ret->u.extrn_s.name_list = head;
     ret->u.extrn_s.following = parse_statement();
@@ -834,12 +834,12 @@ parse_starts_with_name_statement(Token name_token)
     Statement *ret;
 
     if (token.kind == COLON_TOKEN) {
-	ret = parse_labeled_statement(name_token.u.name,
-				      name_token.line_number);
+        ret = parse_labeled_statement(name_token.u.name,
+                                      name_token.line_number);
     } else {
-	unget_token(token);
-	unget_token(name_token);
-	ret = parse_expression_statement(name_token.line_number);
+        unget_token(token);
+        unget_token(name_token);
+        ret = parse_expression_statement(name_token.line_number);
     }
 
     return ret;
@@ -886,19 +886,19 @@ parse_compound_statement(int line_number)
     ret = alloc_statement(COMPOUND_STATEMENT, line_number);
 
     for (;;) {
-	token = get_token();
-	if (token.kind == RC_TOKEN) {
-	    break;
-	}
-	unget_token(token);
-	stmt = parse_statement();
-	if (head == NULL) {
-	    head = stmt;
-	} else {
-	    tail->next = stmt;
-	}
-	for (tail = stmt; tail->next != NULL; tail = tail->next)
-	    ;
+        token = get_token();
+        if (token.kind == RC_TOKEN) {
+            break;
+        }
+        unget_token(token);
+        stmt = parse_statement();
+        if (head == NULL) {
+            head = stmt;
+        } else {
+            tail->next = stmt;
+        }
+        for (tail = stmt; tail->next != NULL; tail = tail->next)
+            ;
     }
     ret->u.compound_s.stmt = head;
 
@@ -922,10 +922,10 @@ parse_if_statement(int line_number)
 
     token = get_token();
     if (token.kind == ELSE_TOKEN) {
-	ret->u.if_s.else_clause = parse_statement();
+        ret->u.if_s.else_clause = parse_statement();
     } else {
-	ret->u.if_s.else_clause = NULL;
-	unget_token(token);
+        ret->u.if_s.else_clause = NULL;
+        unget_token(token);
     }
 
     return ret;
@@ -1005,12 +1005,12 @@ parse_return_statement(int line_number)
     ret = alloc_statement(RETURN_STATEMENT, line_number);
     semicolon_token = get_token();
     if (semicolon_token.kind == SEMICOLON_TOKEN) {
-	ret->u.goto_s.value = NULL;
+        ret->u.goto_s.value = NULL;
     } else {
-	unget_token(semicolon_token);
-	ret->u.goto_s.value = parse_expression();
-	semicolon_token = get_token();
-	check_token(semicolon_token, SEMICOLON_TOKEN);
+        unget_token(semicolon_token);
+        ret->u.goto_s.value = parse_expression();
+        semicolon_token = get_token();
+        check_token(semicolon_token, SEMICOLON_TOKEN);
     }
 
     return ret;
@@ -1050,34 +1050,34 @@ parse_statement(void)
     first_token = get_token();
 
     if (first_token.kind == AUTO_TOKEN) {
-	ret = parse_auto_statement(first_token.line_number);
+        ret = parse_auto_statement(first_token.line_number);
     } else if (first_token.kind == EXTRN_TOKEN) {
-	ret = parse_extrn_statement(first_token.line_number);
+        ret = parse_extrn_statement(first_token.line_number);
     } else if (first_token.kind == NAME_TOKEN) {
-	ret = parse_starts_with_name_statement(first_token);
+        ret = parse_starts_with_name_statement(first_token);
     } else if (first_token.kind == CASE_TOKEN) {
-	ret = parse_case_statement(first_token.line_number);
+        ret = parse_case_statement(first_token.line_number);
     } else if (first_token.kind == DEFAULT_TOKEN) {
-	ret = parse_default_statement(first_token.line_number);
+        ret = parse_default_statement(first_token.line_number);
     } else if (first_token.kind == LC_TOKEN) {
-	ret = parse_compound_statement(first_token.line_number);
+        ret = parse_compound_statement(first_token.line_number);
     } else if (first_token.kind == IF_TOKEN) {
-	ret = parse_if_statement(first_token.line_number);
+        ret = parse_if_statement(first_token.line_number);
     } else if (first_token.kind == WHILE_TOKEN) {
-	ret = parse_while_statement(first_token.line_number);
+        ret = parse_while_statement(first_token.line_number);
     } else if (first_token.kind == SWITCH_TOKEN) {
-	ret = parse_switch_statement(first_token.line_number);
+        ret = parse_switch_statement(first_token.line_number);
     } else if (first_token.kind == GOTO_TOKEN) {
-	ret = parse_goto_statement(first_token.line_number);
+        ret = parse_goto_statement(first_token.line_number);
     } else if (first_token.kind == BREAK_TOKEN) {
-	ret = parse_break_statement(first_token.line_number);
+        ret = parse_break_statement(first_token.line_number);
     } else if (first_token.kind == RETURN_TOKEN) {
-	ret = parse_return_statement(first_token.line_number);
+        ret = parse_return_statement(first_token.line_number);
     } else if (first_token.kind == SEMICOLON_TOKEN) {
-	ret = parse_null_statement(first_token.line_number);
+        ret = parse_null_statement(first_token.line_number);
     } else {
-	unget_token(first_token);
-	ret = parse_expression_statement(first_token.line_number);
+        unget_token(first_token);
+        ret = parse_expression_statement(first_token.line_number);
     }
 
     return ret;
@@ -1104,8 +1104,8 @@ parse_function_definition(char *name)
     return ret;
 }
 
-static IVal *
-alloc_ival(IValKind kind)
+IVal *
+bcp_alloc_ival(IValKind kind)
 {
     IVal *p;
 
@@ -1125,28 +1125,28 @@ parse_ival_list(void)
     IVal *ival;
     
     for (;;) {
-	token = get_token();
-	if (token.kind == SEMICOLON_TOKEN) {
-	    break;
-	} else if (token.kind == NAME_TOKEN) {
-	    ival = alloc_ival(NAME_IVAL);
-	    ival->u.name = token.u.name;
-	} else {
-	    unget_token(token);
-	    ival = alloc_ival(CONSTANT_IVAL);
-	    ival->u.constant = parse_constant();
-	}
-	if (head == NULL) {
-	    head = ival;
-	} else {
-	    tail->next = ival;
-	}
-	tail = ival;
-	token = get_token();
-	if (token.kind == SEMICOLON_TOKEN) {
-	    break;
-	}
-	check_token(token, COMMA_TOKEN);
+        token = get_token();
+        if (token.kind == SEMICOLON_TOKEN) {
+            break;
+        } else if (token.kind == NAME_TOKEN) {
+            ival = bcp_alloc_ival(NAME_IVAL);
+            ival->u.n.name = token.u.name;
+        } else {
+            unget_token(token);
+            ival = bcp_alloc_ival(CONSTANT_IVAL);
+            ival->u.c.constant = parse_constant();
+        }
+        if (head == NULL) {
+            head = ival;
+        } else {
+            tail->next = ival;
+        }
+        tail = ival;
+        token = get_token();
+        if (token.kind == SEMICOLON_TOKEN) {
+            break;
+        }
+        check_token(token, COMMA_TOKEN);
     }
 
     return head;
@@ -1165,28 +1165,28 @@ parse_declaration(char *name)
 
     token = get_token();
     if (token.kind == LB_TOKEN) {
-	def->u.decl_def.is_vec = TRUE;
+        def->u.decl_def.is_vec = TRUE;
 
-	token = get_token();
-	if (token.kind == RB_TOKEN) {
-	    def->u.decl_def.has_vec_size = FALSE;
-	} else {
-	    unget_token(token);
-	    def->u.decl_def.has_vec_size = TRUE;
-	    c = parse_constant();
-	    if (c->kind != INT_CONSTANT) {
-		bcp_compile_error(VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
-				  c->line_number);
-	    }
-	    def->u.decl_def.vec_size = c->u.int_value + 1;
-	    token = get_token();
-	    check_token(token, RB_TOKEN);
-	}
-	def->u.decl_def.ival_list = parse_ival_list();
+        token = get_token();
+        if (token.kind == RB_TOKEN) {
+            def->u.decl_def.has_vec_size = FALSE;
+        } else {
+            unget_token(token);
+            def->u.decl_def.has_vec_size = TRUE;
+            c = parse_constant();
+            if (c->kind != INT_CONSTANT) {
+                bcp_compile_error(VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
+                                  c->line_number);
+            }
+            def->u.decl_def.vec_size = c->u.int_value + 1;
+            token = get_token();
+            check_token(token, RB_TOKEN);
+        }
+        def->u.decl_def.ival_list = parse_ival_list();
     } else {
-	unget_token(token);
-	def->u.decl_def.is_vec = FALSE;
-	def->u.decl_def.ival_list = parse_ival_list();
+        unget_token(token);
+        def->u.decl_def.is_vec = FALSE;
+        def->u.decl_def.ival_list = parse_ival_list();
     }
     return def;
 }
@@ -1200,16 +1200,16 @@ parse_definition(void)
 
     name_token = get_token();
     if (name_token.kind == END_OF_FILE_TOKEN) {
-	return NULL;
+        return NULL;
     }
     check_token(name_token, NAME_TOKEN);
 
     next_token = get_token();
     if (next_token.kind == LP_TOKEN) {
-	ret = parse_function_definition(name_token.u.name);
+        ret = parse_function_definition(name_token.u.name);
     } else {
-	unget_token(next_token);
-	ret = parse_declaration(name_token.u.name);
+        unget_token(next_token);
+        ret = parse_declaration(name_token.u.name);
     }
     ret->line_number = name_token.line_number;
 
@@ -1224,61 +1224,75 @@ parse(void)
     Definition *def;
 
     for (;;) {
-	def = parse_definition();
-	if (def == NULL) {
-	    return head;
-	}
-	if (head == NULL) {
-	    head = def;
-	} else {
-	    tail->next = def;
-	}
-	tail = def;
+        def = parse_definition();
+        if (def == NULL) {
+            return head;
+        }
+        if (head == NULL) {
+            head = def;
+        } else {
+            tail->next = def;
+        }
+        tail = def;
     }
     return head;
 }
 
-void
-BCP_compile(MEM_Storage storage, FILE *src_fp)
+int *
+BCP_compile(FILE *src_fp, int *main_address)
 {
     Definition *def_head;
     ParseTree *parse_tree;
-    /*
-    Token token;
-    */
+    MEM_Storage storage;
+    int *memory;
+    int i;
 
+    storage = MEM_open_storage(4096);
     bcp_lex_initialize(storage, src_fp);
     def_head = parse();
     parse_tree = bcp_fix_tree(def_head);
-    
-    bcp_dump_tree(stdout, parse_tree);
 
+    memory = bcp_generate_code(parse_tree);
+    for (i = 0; i < parse_tree->static_name_count; i++) {
+        if (!strcmp(parse_tree->static_name[i].name, "main")) {
+            *main_address = parse_tree->static_name[i].address;
+            break;
+        }
+    }
+    if (i == parse_tree->static_name_count) {
+        bcp_compile_error(NAME_NOT_FOUND_ERR, 0, "main");
+    }
+
+    bcp_dump_tree(stdout, parse_tree, memory);
+
+    return memory;
     /*
     for (;;) {
-	token = bcp_get_token();
-	if (token.kind == END_OF_FILE_TOKEN) {
-	    break;
-	}
-	if (token.kind == NAME_TOKEN) {
-	    printf("%d:token..%s (%s)\n", token.line_number,
-		   bcp_token_str[token.kind], token.u.name);
-	} else if (token.kind == INT_LITERAL_TOKEN) {
-	    printf("%d:token..%s (%d)\n", token.line_number,
-		   bcp_token_str[token.kind],
-		   token.u.int_value);
-	} else if (token.kind == STRING_LITERAL_TOKEN) {
-	    printf("%d:token..%s (%s)\n", token.line_number,
-		   bcp_token_str[token.kind],
-		   token.u.str_literal.str);
-	} else if (token.kind == CHARS_TOKEN) {
-	    printf("%d:token..%s (%08x)\n", token.line_number,
-		   bcp_token_str[token.kind],
-		   token.u.chars);
-	} else {
-	    printf("%d:token..%s\n", token.line_number,
-		   bcp_token_str[token.kind]);
-	}
+        token = bcp_get_token();
+        if (token.kind == END_OF_FILE_TOKEN) {
+            break;
+        }
+        if (token.kind == NAME_TOKEN) {
+            printf("%d:token..%s (%s)\n", token.line_number,
+                   bcp_token_str[token.kind], token.u.name);
+        } else if (token.kind == INT_LITERAL_TOKEN) {
+            printf("%d:token..%s (%d)\n", token.line_number,
+                   bcp_token_str[token.kind],
+                   token.u.int_value);
+        } else if (token.kind == STRING_LITERAL_TOKEN) {
+            printf("%d:token..%s (%s)\n", token.line_number,
+                   bcp_token_str[token.kind],
+                   token.u.str_literal.str);
+        } else if (token.kind == CHARS_TOKEN) {
+            printf("%d:token..%s (%08x)\n", token.line_number,
+                   bcp_token_str[token.kind],
+                   token.u.chars);
+        } else {
+            printf("%d:token..%s\n", token.line_number,
+                   bcp_token_str[token.kind]);
+        }
     }
     */
+
 }
 

@@ -22,9 +22,9 @@ typedef enum {
 typedef struct {
     ConstantKind kind;
     union {
-	int int_value;
-	StringLiteral str_literal;
-	unsigned int chars;
+        int int_value;
+        StringLiteral str_literal;
+        unsigned int chars;
     } u;
     int line_number;
 } Constant;
@@ -37,14 +37,21 @@ typedef enum {
 typedef struct IVal_tag {
     IValKind kind;
     union {
-	Constant *constant;
-	char *name;
+        struct {
+            int string_literal_index;
+            Constant *constant;
+        } c;
+        struct {
+            int static_name_index;
+            char *name;
+        } n;
     } u;
     struct IVal_tag *next;
 } IVal;
 
 typedef struct {
     char *name;
+    Boolean is_function;
     Boolean is_vec;
     int vec_size;
     Boolean defined;
@@ -77,16 +84,20 @@ typedef struct {
 typedef struct LocalName_tag {
     LocalNameKind kind;
     char *name;
+    int line_number;
     union {
-	ExternalLocalName ext_ln;
-	InternalLocalName int_ln;
-	AutoLocalName auto_ln;
+        ExternalLocalName ext_ln;
+        InternalLocalName int_ln;
+        AutoLocalName auto_ln;
     } u;
     struct LocalName_tag *next;
 } LocalName;
 
 typedef struct {
     StringLiteral str_literal;
+    Boolean in_code;
+    int code_address;
+    int str_address;
 } StringLiteralDef;
 
 typedef enum {
@@ -189,6 +200,26 @@ typedef enum {
     BIT_OR_ASSIGN_OPERATOR
 } BinaryOperator;
 
+#define is_assign_operator(op) (\
+        (op) == ASSIGN_OPERATOR\
+        || (op) == ADD_ASSIGN_OPERATOR\
+        || (op) == SUB_ASSIGN_OPERATOR\
+        || (op) == MUL_ASSIGN_OPERATOR\
+        || (op) == DIV_ASSIGN_OPERATOR\
+        || (op) == MOD_ASSIGN_OPERATOR\
+        || (op) == LEFT_SHIFT_ASSIGN_OPERATOR\
+        || (op) == RIGHT_SHIFT_ASSIGN_OPERATOR\
+        || (op) == LT_ASSIGN_OPERATOR\
+        || (op) == LE_ASSIGN_OPERATOR\
+        || (op) == GT_ASSIGN_OPERATOR\
+        || (op) == GE_ASSIGN_OPERATOR\
+        || (op) == EQ_ASSIGN_OPERATOR\
+        || (op) == NE_ASSIGN_OPERATOR\
+        || (op) == BIT_AND_ASSIGN_OPERATOR\
+        || (op) == BIT_XOR_ASSIGN_OPERATOR\
+        || (op) == BIT_OR_ASSIGN_OPERATOR\
+        )
+
 typedef struct {
     BinaryOperator operator;
     Expression *left;
@@ -207,15 +238,15 @@ struct Expression_tag {
     Boolean has_lvalue;
     Boolean is_lvalue;
     union {
-	NameExpression name_e;
-	IntegerLiteral int_e;
-	CharsLiteral chars_e;
-	StringLiteralExpression str_e;
-	IndexExpression index_e;
-	FunctionCallExpression func_call_e;
-	UnaryExpression unary_e;
-	BinaryExpression binary_e;
-	ConditionalExpression cond_e;
+        NameExpression name_e;
+        IntegerLiteral int_e;
+        CharsLiteral chars_e;
+        StringLiteralExpression str_e;
+        IndexExpression index_e;
+        FunctionCallExpression func_call_e;
+        UnaryExpression unary_e;
+        BinaryExpression binary_e;
+        ConditionalExpression cond_e;
     } u;
 };
 
@@ -291,6 +322,7 @@ typedef struct {
 typedef struct {
     Expression *cond;
     Statement *stmt;
+    int end_label;
 } WhileStatement;
 
 typedef struct {
@@ -298,6 +330,7 @@ typedef struct {
     Statement *stmt;
     CaseClause *case_list;
     CaseClause *default_case;
+    int end_label;
 } SwitchStatement;
 
 typedef struct {
@@ -320,19 +353,19 @@ struct Statement_tag {
     StatementKind kind;
     int line_number;
     union {
-	AutoStatement auto_s;
-	ExtrnStatement extrn_s;
-	LabeledStatement label_s;
-	CaseStatement case_s;
-	DefaultStatement default_s;
-	CompoundStatement compound_s;
-	IfStatement if_s;
-	WhileStatement while_s;
-	SwitchStatement switch_s;
-	GotoStatement goto_s;
-	BreakStatement break_s;
-	ReturnStatement return_s;
-	ExpressionStatement expr_s;
+        AutoStatement auto_s;
+        ExtrnStatement extrn_s;
+        LabeledStatement label_s;
+        CaseStatement case_s;
+        DefaultStatement default_s;
+        CompoundStatement compound_s;
+        IfStatement if_s;
+        WhileStatement while_s;
+        SwitchStatement switch_s;
+        GotoStatement goto_s;
+        BreakStatement break_s;
+        ReturnStatement return_s;
+        ExpressionStatement expr_s;
     } u;
     struct Statement_tag *next;
 };
@@ -347,6 +380,7 @@ typedef struct {
     NameItem *params;
     Statement *stmt;
     LocalName *local_names;
+    int local_variable_size;
 } FunctionDefinition;
 
 typedef struct {
@@ -360,8 +394,8 @@ typedef struct {
 typedef struct Definition_tag {
     DefinitionKind kind;
     union {
-	FunctionDefinition func_def;
-	DeclarationDefinition decl_def;
+        FunctionDefinition func_def;
+        DeclarationDefinition decl_def;
     } u;
     int line_number;
     struct Definition_tag *next;
@@ -369,6 +403,7 @@ typedef struct Definition_tag {
 
 typedef struct {
     Definition *def_head;
+    int code_max;
     int static_name_count;
     StaticName *static_name;
     int string_literal_count;
@@ -390,6 +425,8 @@ typedef enum {
     INVALID_CHARACTER_ERR,
     VECTOR_SIZE_MUST_BE_AN_INTEGER_ERR,
     NAME_ALREADY_DEFINED_ERR,
+    NAME_NOT_FOUND_ERR,
+    NAME_NOT_DEFINED_ERR,
     VECTOR_SIZE_IS_NOT_DEFINED_ERR,
     OPERAND_DOES_NOT_HAVE_LVALUE_ERR,
     CASE_WITHOUT_SWITCH_ERR,
@@ -402,11 +439,17 @@ void bcp_lex_initialize(MEM_Storage storage, FILE *src_fp);
 Token bcp_get_token(void);
 extern char *bcp_token_str[];
 
+/* parser.c */
+IVal *bcp_alloc_ival(IValKind kind);
+
 /* fix_tree.c */
 ParseTree *bcp_fix_tree(Definition *def_head);
 
 /*dump_tree.c */
-void bcp_dump_tree(FILE *fp, ParseTree *parse_tree);
+void bcp_dump_tree(FILE *fp, ParseTree *parse_tree, int *memory);
+
+/* gencode.c */
+int *bcp_generate_code(ParseTree *parse_tree);
 
 /* message.c */
 void bcp_compile_error(CompileErrorCode code, int line_number, ...);

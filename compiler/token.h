@@ -76,10 +76,10 @@ typedef struct {
 typedef struct {
     TokenKind kind;
     union {
-	int int_value;
-	char *name;
-	StringLiteral str_literal;
-	unsigned int chars;
+        int int_value;
+        char *name;
+        StringLiteral str_literal;
+        unsigned int chars;
     } u;
     int line_number;
 } Token;

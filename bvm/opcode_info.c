@@ -1,40 +1,79 @@
+#include <assert.h>
 #include "BVM.h"
+#include "bvm_pri.h"
 
 static BVM_OpCodeInfo st_opcode_info[] = {
-    {"BVM_NOP", 0},
-    {"BVM_PUSH", 1},
-    {"BVM_PUSH_STACK", 1},
-    {"BVM_PUSH_STATIC", 1},
-    {"BVM_POP_STACK", 1},
-    {"BVM_POP_STATIC", 1},
-    {"BVM_PUSH_STACK_ADDRESS", 1},
-    {"BVM_POP", 0},
-    {"BVM_DUPLICATE", 0},
-    {"BVM_ADD", 0},
-    {"BVM_SUB", 0},
-    {"BVM_MUL", 0},
-    {"BVM_DIV", 0},
-    {"BVM_MOD", 0},
-    {"BVM_MINUS", 0},
-    {"BVM_EQ", 0},
-    {"BVM_NE", 0},
-    {"BVM_GT", 0},
-    {"BVM_GE", 0},
-    {"BVM_LT", 0},
-    {"BVM_LE", 0},
-    {"BVM_BIT_AND", 0},
-    {"BVM_BIT_OR", 0},
-    {"BVM_BIT_XOR", 0},
-    {"BVM_BIT_NOT", 0},
-    {"BVM_JUMP", 0},
-    {"BVM_JUMP_IF_TRUE", 1},
-    {"BVM_JUMP_IF_FALSE", 1},
-    {"BVM_CALL", 1},
-    {"BVM_RETURN", 0},
+    {"NOP", 0},
+    {"PUSH", 1},
+    {"PUSH_AUTO", 1},
+    {"PUSH_STATIC", 1},
+    {"POP_AUTO", 1},
+    {"POP_STATIC", 1},
+    {"PUSH_AUTO_ADDRESS", 1},
+    {"PUSH_BY_STACK", 0},
+    {"POP_BY_STACK", 0},
+    {"POP", 0},
+    {"PUSH_N", 1},
+    {"POP_N", 1},
+    {"DUPLICATE", 0},
+    {"ADD", 0},
+    {"SUB", 0},
+    {"MUL", 0},
+    {"DIV", 0},
+    {"MOD", 0},
+    {"MINUS", 0},
+    {"LEFT_SHIFT", 0},
+    {"RIGHT_SHIFT", 0},
+    {"EQ", 0},
+    {"NE", 0},
+    {"GT", 0},
+    {"GE", 0},
+    {"LT", 0},
+    {"LE", 0},
+    {"LOGICAL_NOT", 0},
+    {"BIT_AND", 0},
+    {"BIT_OR", 0},
+    {"BIT_XOR", 0},
+    {"BIT_NOT", 0},
+    {"JUMP", 1},
+    {"JUMP_IF_TRUE", 1},
+    {"JUMP_IF_FALSE", 1},
+    {"JUMP_STACK", 0},
+    {"CALL", 0},
+    {"SAVE_RETURN_VALUE", 0},
+    {"RETURN", 0},
+    {"PUSH_RETURN_VALUE", 0},
 };
    
 BVM_OpCodeInfo *
 BVM_get_opcode_info(void)
 {
     return st_opcode_info;
+}
+
+static char *st_builtin_function_names[] = {
+    "printf",
+};
+
+BuiltinFunction
+bvm_builtin_functions[] = {
+    {"printf", bvm_fun_printf},
+};
+
+char **BVM_get_builtin_functions(int *count)
+{
+    *count = sizeof(st_builtin_function_names) / sizeof(char*);
+
+    return st_builtin_function_names;
+}
+
+int
+bvm_get_builtin_function_count(void)
+{
+    int count1 = sizeof(st_builtin_function_names) / sizeof(char*);
+    int count2 = sizeof(bvm_builtin_functions) / sizeof(BuiltinFunction);
+    
+    assert(count1 == count2);
+
+    return count1;
 }
