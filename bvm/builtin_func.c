@@ -1,41 +1,121 @@
 #include <stdio.h>
+#include <assert.h>
+#include <limits.h>
+#include "BVM.h"
 #include "bvm_pri.h"
 
-int
-bvm_fun_printf(int *args, int *memory)
+static FILE *st_current_input;
+static FILE *st_current_output;
+
+static void
+put_str(FILE *fp, char *str)
+{
+    int i;
+
+    for (i = 0; str[i] != BVM_EOT; i++) {
+        fputc(str[i], fp);
+    }
+}
+
+static int
+fun_printf(int argc, int *args, int *memory)
 {
     char *fmt;
     int *values;
     int fmt_idx;
     int val_idx;
 
+    fprintf(stderr, "printf argc..%d\n", argc);
     fmt = (char*)&memory[args[0]];
     values = &args[1];
     val_idx = 0;
 
-    for (fmt_idx = 0; fmt[fmt_idx] != '\0'; fmt_idx++) {
+    for (fmt_idx = 0; fmt[fmt_idx] != BVM_EOT; fmt_idx++) {
         if (fmt[fmt_idx] == '%') {
             if (fmt[fmt_idx + 1] == 'c') {
-                printf("%c", values[val_idx]);
+                fprintf(st_current_output, "%c", values[val_idx]);
                 val_idx++;
             } else if (fmt[fmt_idx + 1] == 'd') {
-                printf("%d", values[val_idx]);
+                fprintf(st_current_output, "%d", values[val_idx]);
                 val_idx++;
             } else if (fmt[fmt_idx + 1] == 'o') {
-                printf("%o", values[val_idx]);
+                fprintf(st_current_output, "%o", values[val_idx]);
                 val_idx++;
             } else if (fmt[fmt_idx + 1] == 's') {
-                printf("%s", (char*)&memory[values[val_idx]]);
+                put_str(st_current_output, (char*)&memory[values[val_idx]]);
                 val_idx++;
             } else if (fmt[fmt_idx + 1] == '%') {
-                putchar('%');
+                fputc('%', st_current_output);
             }
             fmt_idx++;
         } else {
-            putchar(fmt[fmt_idx]);
+            fputc(fmt[fmt_idx], st_current_output);
         }
     }
     return val_idx;
+}
+
+static int
+fun_putnumb(int argc, int *args, int *memory)
+{
+    return fprintf(st_current_output, "%d", args[0]);
+}
+
+static int
+fun_putchar(int argc, int *args, int *memory)
+{
+    int i;
+    int ch;
+
+    for (i = 0; i < sizeof(int); i++) {
+        ch = (((unsigned int*)args)[0] >> ((sizeof(int) - i - 1)) * CHAR_BIT)
+            & 0xff;
+        if (ch != 0 && ch != BVM_EOT) {
+            fputc(ch, st_current_output);
+        } else if (ch == BVM_EOT) {
+            break;
+        }
+    }
+
+    return 0;
+}
+
+static char *st_builtin_function_names[] = {
+    "printf",
+    "putnumb",
+    "putchar",
+};
+
+BuiltinFunction
+bvm_builtin_functions[] = {
+    {"printf", fun_printf},
+    {"putnumb", fun_putnumb},
+    {"putchar", fun_putchar},
+};
+
+int
+bvm_get_builtin_function_count(void)
+{
+    int count1 = sizeof(st_builtin_function_names) / sizeof(char*);
+    int count2 = sizeof(bvm_builtin_functions) / sizeof(BuiltinFunction);
+    
+    assert(count1 == count2);
+
+    return count1;
+}
+
+char **BVM_get_builtin_functions(int *count)
+{
+    *count = sizeof(st_builtin_function_names) / sizeof(char*);
+
+    return st_builtin_function_names;
+}
+
+void
+bvm_init_builtin_function(void)
+{
+    st_current_input = stdin;
+    st_current_output = stdout;
 }
 
 #if 0

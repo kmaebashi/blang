@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <limits.h>
 #include "MEM.h"
+#include "BVM.h"
 #include "token.h"
 #include "compiler.h"
 
@@ -107,7 +108,7 @@ byte_array_to_int(signed char *array, int size)
     unsigned int ret = 0;
 
     for (i = 0; i < size; i++) {
-        ret += array[size - 1 - i] >> (i * CHAR_BIT);
+        ret += array[size - 1 - i] << (i * CHAR_BIT);
     }
 
     return ret;
@@ -172,7 +173,7 @@ static int escape_seq_to_int(int ch) {
     if (ch == '0') {
         ret = 0;
     } else if (ch == 'e') {
-        ret = -1;
+        ret = BVM_EOT;
     } else if (ch == '(') {
         ret = '{';
     } else if (ch == ')') {

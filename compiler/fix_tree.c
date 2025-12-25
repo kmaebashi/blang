@@ -36,10 +36,11 @@ add_static_name(char *name, Boolean is_function, Boolean is_vec, int vec_size,
         }
         if (defined) {
             st_static_name[i].defined = defined;
+            st_static_name[i].is_function = is_function;
+            st_static_name[i].initializer = initializer;
             if (is_vec) {
                 st_static_name[i].is_vec = TRUE;
                 st_static_name[i].vec_size = vec_size;
-                st_static_name[i].initializer = initializer;
             }
         }
         return i;
@@ -595,7 +596,7 @@ set_auto_offset(void)
         }
     }
     local_variable_size = offset;
-    offset += BVM_RETURN_INFO_SIZE;
+    offset += BVM_RETURN_INFO_SIZE + 1;
     for (pos = st_current_function_local; pos != NULL; pos = pos->next) {
         if (pos->kind != AUTO_LOCAL_NAME || !pos->u.auto_ln.is_parameter) {
             continue;

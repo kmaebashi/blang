@@ -51,29 +51,6 @@ BVM_get_opcode_info(void)
     return st_opcode_info;
 }
 
-static char *st_builtin_function_names[] = {
-    "printf",
-};
 
-BuiltinFunction
-bvm_builtin_functions[] = {
-    {"printf", bvm_fun_printf},
-};
 
-char **BVM_get_builtin_functions(int *count)
-{
-    *count = sizeof(st_builtin_function_names) / sizeof(char*);
 
-    return st_builtin_function_names;
-}
-
-int
-bvm_get_builtin_function_count(void)
-{
-    int count1 = sizeof(st_builtin_function_names) / sizeof(char*);
-    int count2 = sizeof(bvm_builtin_functions) / sizeof(BuiltinFunction);
-    
-    assert(count1 == count2);
-
-    return count1;
-}

@@ -25,19 +25,25 @@ gencode(BVM_OpCode code, ...)
     va_list argp;
     int i;
 
+/*
     fprintf(stderr, "%4d: %s ", st_buf_idx, st_opcode_info[(int)code].name);
+*/
     st_buf[st_buf_idx] = (int)code;
     st_buf_idx++;
 
     va_start(argp, code);
     for (i = 0; i < st_opcode_info[(int)code].operand_count; i++) {
         int operand = va_arg(argp, int);
+/*
         fprintf(stderr, "%d ", operand);
+*/
         st_buf[st_buf_idx] = operand;
         st_buf_idx++;
     }
     va_end(argp);
+/*
     fprintf(stderr, "\n");
+*/
 }
 
 static void
@@ -162,9 +168,10 @@ gen_function_call_expression(Expression *expr)
     int arg_count = 0;
 
     arg_count = gen_args(expr->u.func_call_e.args, arg_count);
+    gencode(BVM_PUSH, arg_count);
     gen_expression(expr->u.func_call_e.func);
     gencode(BVM_CALL);
-    gencode(BVM_POP_N, arg_count);
+    gencode(BVM_POP_N, arg_count + 1);
     gencode(BVM_PUSH_RETURN_VALUE);
 }
 
@@ -799,7 +806,7 @@ fix_string_literal(int def_count, StringLiteralDef *def)
         for (i = 0; i < def[def_idx].str_literal.length; i++) {
             target[i] = def[def_idx].str_literal.str[i];
         }
-        target[i] = '\0';
+        target[i] = BVM_EOT;
         str_len = def[def_idx].str_literal.length + 1;
         st_buf_idx += ((str_len + sizeof(int) - 1)) / sizeof(int);
 

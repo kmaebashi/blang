@@ -6,11 +6,13 @@
 
 static BVM_OpCodeInfo *st_opcode_info;
 static int st_builtin_function_count;
+static int st_current_arg_count;
 
 static int
 call_builtin_function(int func_idx, int sp, int *memory)
 {
-    return bvm_builtin_functions[func_idx].func(&memory[sp + 1], memory); 
+    return bvm_builtin_functions[func_idx]
+        .func(memory[sp + 1], &memory[sp + 2], memory); 
 }
 
 static int
@@ -221,6 +223,7 @@ execute(int *memory, int main_address)
                 sp--;
                 memory[sp] = pc;
                 memory[sp + 1] = base;
+                st_current_arg_count = memory[sp + 2];
                 sp--;
                 pc = dest_address;
             }
@@ -250,11 +253,18 @@ execute(int *memory, int main_address)
     }
 }
 
+static int
+bvm_get_current_arg_count(void)
+{
+    return st_current_arg_count;
+}
+
 int
 BVM_execute(int *memory, int main_address)
 {
     st_opcode_info = BVM_get_opcode_info();
     st_builtin_function_count = bvm_get_builtin_function_count();
+    bvm_init_builtin_function();
 
     execute(memory, main_address);
 

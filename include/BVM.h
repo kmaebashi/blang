@@ -3,6 +3,7 @@
 
 #define BVM_RETURN_INFO_SIZE (2)
 #define BVM_MEMORY_SIZE (65536)
+#define BVM_EOT (4)
 
 typedef enum {
     BVM_NOP,

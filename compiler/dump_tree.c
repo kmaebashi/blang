@@ -85,6 +85,38 @@ dump_chars_expression(FILE *fp, Expression *expr, int level)
     fprintf(fp, "chars..%08x\n", expr->u.chars_e.chars);
 }
 
+static char *
+int_to_escape_seq(int ch)
+{
+    if (ch == 0) {
+        return "*0";
+    } else if (ch == BVM_EOT) {
+        return "*e";
+    } else if (ch == '\t') {
+        return "*t";
+    } else if (ch == '\n') {
+        return "*n";
+    } else {
+        return NULL;
+    }
+}
+
+static void
+dump_string_literal(FILE *fp, StringLiteral sl)
+{
+    int i;
+    char *escape_str;
+
+    for (i = 0; i < sl.length; i++) {
+        escape_str = int_to_escape_seq(sl.str[i]);
+        if (escape_str != NULL) {
+            fputs(escape_str, fp);
+        } else {
+            fputc(sl.str[i], fp);
+        }
+    }
+}
+
 static void
 dump_string_literal_expression(FILE *fp, Expression *expr, int level)
 {
@@ -604,6 +636,7 @@ dump_static_names(FILE *fp, int count, StaticName *names)
     }
 }
 
+
 static void
 dump_string_literals(FILE *fp, int count, StringLiteralDef *def)
 {
@@ -612,7 +645,9 @@ dump_string_literals(FILE *fp, int count, StringLiteralDef *def)
     fprintf(fp, "**** string literals ******\n");
 
     for (i = 0; i < count; i++) {
-        fprintf(fp, "str[%d] %s:\n", i, def[i].str_literal.str);
+        fprintf(fp, "str[%d] ", i);
+        dump_string_literal(fp, def[i].str_literal);
+        fprintf(fp, ":\n");
         fprintf(fp, "  length..%d code_address..%d str_address..%d\n",
                 def[i].str_literal.length,
                 def[i].code_address, def[i].str_address);
@@ -622,12 +657,12 @@ dump_string_literals(FILE *fp, int count, StringLiteralDef *def)
 void
 bcp_dump_tree(FILE *fp, ParseTree *parse_tree, int *memory)
 {
+#if 0
     dump_code(fp, parse_tree->code_max, memory);
-/*
     dump_tree(fp, parse_tree->def_head);
-*/
     dump_static_names(fp, parse_tree->static_name_count,
                       parse_tree->static_name);
     dump_string_literals(fp, parse_tree->string_literal_count,
                          parse_tree->string_literal);
+#endif
 }
