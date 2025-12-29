@@ -25,7 +25,7 @@ execute(int *memory, int main_address)
     
     
     for (;;) {
-#if 0
+#if 1
         int i;
         fprintf(stderr, "%4d %5d %s ",
                 pc, sp, st_opcode_info[memory[pc]].name);

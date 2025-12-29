@@ -225,6 +225,7 @@ static OperatorInfo st_operator_table[] = {
     {"=>", GT_ASSIGN_TOKEN},
     {"=&", BIT_AND_ASSIGN_TOKEN},
     {"=|", BIT_OR_ASSIGN_TOKEN},
+    {"=^", BIT_XOR_ASSIGN_TOKEN},
     {"(", LP_TOKEN},
     {")", RP_TOKEN},
     {"{", LC_TOKEN},

@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #include <limits.h>
 #include "BVM.h"
@@ -25,7 +26,6 @@ fun_printf(int argc, int *args, int *memory)
     int fmt_idx;
     int val_idx;
 
-    fprintf(stderr, "printf argc..%d\n", argc);
     fmt = (char*)&memory[args[0]];
     values = &args[1];
     val_idx = 0;
@@ -80,10 +80,31 @@ fun_putchar(int argc, int *args, int *memory)
     return 0;
 }
 
+static int
+fun_getchar(int argc, int *args, int *memory)
+{
+    int ret;
+    ret = fgetc(st_current_input);
+
+    if (ret == EOF) {
+        return BVM_EOT;
+    } else {
+        return ret;
+    }
+}
+
+static int
+fun_exit(int argc, int *args, int *memory)
+{
+    exit(0);
+}
+
 static char *st_builtin_function_names[] = {
     "printf",
     "putnumb",
     "putchar",
+    "getchar",
+    "exit",
 };
 
 BuiltinFunction
@@ -91,6 +112,8 @@ bvm_builtin_functions[] = {
     {"printf", fun_printf},
     {"putnumb", fun_putnumb},
     {"putchar", fun_putchar},
+    {"getchar", fun_getchar},
+    {"exit", fun_exit},
 };
 
 int

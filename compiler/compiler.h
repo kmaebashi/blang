@@ -236,7 +236,6 @@ struct Expression_tag {
     ExpressionKind kind;
     int line_number;
     Boolean has_lvalue;
-    Boolean is_lvalue;
     union {
         NameExpression name_e;
         IntegerLiteral int_e;

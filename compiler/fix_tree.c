@@ -162,6 +162,7 @@ add_label(char *name, Boolean defined, int line_number)
         }
     } else {
         lp = alloc_local_name(INTERNAL_LOCAL_NAME, name, line_number);
+        st_current_function_local = lp;
     }
 
     external_name = bcp_malloc(strlen(st_current_function_name)
@@ -287,7 +288,6 @@ fix_unary_expression(Expression *expr)
             bcp_compile_error(OPERAND_DOES_NOT_HAVE_LVALUE_ERR,
                               expr->line_number);
         }
-        expr->u.unary_e.operand->is_lvalue = TRUE;
     }
     if (expr->u.unary_e.operator == INDIRECTION_OPERATOR) {
         expr->has_lvalue = TRUE;
@@ -306,7 +306,6 @@ fix_binary_expression(Expression *expr)
             bcp_compile_error(OPERAND_DOES_NOT_HAVE_LVALUE_ERR,
                               expr->line_number);
         }
-        expr->u.binary_e.left->is_lvalue = TRUE;
     }
 }
 
@@ -660,7 +659,7 @@ get_ext_vec_size(Definition *def)
     if (!def->u.decl_def.has_vec_size) {
         return ival_count;
     } else {
-        if (def->u.decl_def.has_vec_size > ival_count) {
+        if (def->u.decl_def.vec_size > ival_count) {
             return def->u.decl_def.vec_size;
         } else {
             return ival_count;

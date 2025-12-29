@@ -135,7 +135,6 @@ alloc_expression(ExpressionKind kind, int line_number)
     ret->kind = kind;
     ret->line_number = line_number;
     ret->has_lvalue = FALSE;
-    ret->is_lvalue = FALSE;
     
     return ret;
 }
@@ -696,6 +695,8 @@ parse_assignment_expression()
             op = BIT_AND_ASSIGN_OPERATOR;
         } else if (token.kind == BIT_OR_ASSIGN_TOKEN) {
             op = BIT_OR_ASSIGN_OPERATOR;
+        } else if (token.kind == BIT_XOR_ASSIGN_TOKEN) {
+            op = BIT_XOR_ASSIGN_OPERATOR;
         } else {
             unget_token(token);
             return left;

@@ -324,20 +324,23 @@ gen_unary_expression(Expression *expr)
         gen_address_expression(expr->u.unary_e.operand);
         break;
     case MINUS_OPERATOR:
+        gen_expression(expr->u.unary_e.operand);
         gencode(BVM_MINUS);
         break;
     case LOGICAL_NOT_OPERATOR:
+        gen_expression(expr->u.unary_e.operand);
         gencode(BVM_LOGICAL_NOT);
         break;
     case PRE_INC_OPERATOR: /* FALLTHROUGH */
     case PRE_DEC_OPERATOR:
-        gen_pre_inc_dec_expression(expr, TRUE);
+        gen_pre_inc_dec_expression(expr, FALSE);
         break;
     case POST_INC_OPERATOR: /* FALLTHROUGH */
     case POST_DEC_OPERATOR:
-        gen_post_inc_dec_expression(expr, TRUE);
+        gen_post_inc_dec_expression(expr, FALSE);
         break;
     case BIT_NOT_OPERATOR:
+        gen_expression(expr->u.unary_e.operand);
         gencode(BVM_BIT_NOT);
         break;
     default:
@@ -413,7 +416,7 @@ gen_assignment_expression(Expression *expr, Boolean is_toplevel)
         } else {
             assert(0);
         }
-        gen_compound_assignment(expr, code, FALSE);
+        gen_compound_assignment(expr, code, is_toplevel);
     }
 }
 
@@ -608,12 +611,14 @@ gen_if_statement(Statement *stmt)
     gencode(BVM_JUMP_IF_FALSE, false_label);
 
     gen_statement(stmt->u.if_s.then_clause);
-    set_label(false_label);
     if (stmt->u.if_s.else_clause) {
         end_label = get_label();
         gencode(BVM_JUMP, end_label);
+        set_label(false_label);
         gen_statement(stmt->u.if_s.else_clause);
         set_label(end_label);
+    } else {
+        set_label(false_label);
     }
 }
 
