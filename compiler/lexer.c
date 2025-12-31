@@ -317,7 +317,7 @@ bcp_get_token(void)
             if (isdigit(ch)) {
                 add_letter_to_token(ch);
                 status = INT_STATUS;
-            } else if (isalpha(ch) || ch == '_') {
+            } else if (isalpha(ch) || ch == '_' || ch == '.') {
                 add_letter_to_token(ch);
                 status = NAME_STATUS;
             } else if (ch == '"') {
@@ -367,7 +367,7 @@ bcp_get_token(void)
             }
             break;
         case NAME_STATUS:
-            if (isalnum(ch) || ch == '_') {
+            if (isalnum(ch) || ch == '_' || ch == '.') {
                 add_letter_to_token(ch);
             } else {
                 TokenKind token_kind;
@@ -452,7 +452,8 @@ bcp_get_token(void)
             if (ch == '*') {
                 status = IN_COMMENT_STATUS;
             } else {
-                add_letter_to_token(ch);
+                ungetc(ch, st_source_file);
+                add_letter_to_token('/');
                 ret.kind = SLASH_TOKEN;
                 goto LOOP_END;
             }

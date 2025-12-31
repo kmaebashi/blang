@@ -25,7 +25,7 @@ execute(int *memory, int main_address)
     
     
     for (;;) {
-#if 1
+#if 0
         int i;
         fprintf(stderr, "%4d %5d %s ",
                 pc, sp, st_opcode_info[memory[pc]].name);
@@ -253,7 +253,7 @@ execute(int *memory, int main_address)
     }
 }
 
-static int
+int
 bvm_get_current_arg_count(void)
 {
     return st_current_arg_count;

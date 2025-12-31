@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
+#include <limits.h>
 #include "MEM.h"
 #include "BVM.h"
 #include "compiler.h"
@@ -306,7 +307,7 @@ gen_post_inc_dec_expression(Expression *expr, Boolean is_toplevel)
     if (expr->u.unary_e.operator == POST_INC_OPERATOR) {
         gencode(BVM_ADD);
     } else {
-        assert(expr->u.unary_e.operator == POST_INC_OPERATOR);
+        assert(expr->u.unary_e.operator == POST_DEC_OPERATOR);
         gencode(BVM_SUB);
     }
     gen_assign_to(expr->u.unary_e.operand);
@@ -658,12 +659,14 @@ gen_switch_statement(Statement *stmt)
 
     }
     gencode(BVM_POP);
+    stmt->u.switch_s.end_label = get_label();
     if (stmt->u.switch_s.default_case) {
         int default_label = get_label();
         stmt->u.switch_s.default_case->label = default_label;
         gencode(BVM_JUMP, default_label);
+    } else {
+        gencode(BVM_JUMP, stmt->u.switch_s.end_label);
     }
-    stmt->u.switch_s.end_label = get_label();
     gen_statement(stmt->u.switch_s.stmt);
     set_label(stmt->u.switch_s.end_label);
 }
@@ -798,20 +801,43 @@ gen_functions(Definition *head)
 }
 
 static void
+copy_string_literal(int *dest, signed char *str, int length)
+{
+    int i;
+    int int_idx;
+    int cpos;
+    int sh;
+    int ch;
+    int mask;
+
+    for (i = 0; i <= length; i++) {
+        if (i == length) {
+            ch = BVM_EOT;
+        } else {
+            ch = str[i];
+        }
+        int_idx = i / sizeof(int);
+        cpos = i % sizeof(int);
+        sh = (sizeof(int) - 1 - cpos) * CHAR_BIT;
+        mask = 0xff << sh;
+
+        dest[int_idx] &= ~mask;
+        dest[int_idx] |= ch << sh;
+    }
+}
+
+static void
 fix_string_literal(int def_count, StringLiteralDef *def)
 {
     int def_idx = 0;
-    int i;
     int str_len; /* including '*0' */
 
     for (def_idx = 0; def_idx < def_count; def_idx++) {
-        signed char *target = (signed char*)&st_buf[st_buf_idx];
         def[def_idx].str_address = st_buf_idx;
 
-        for (i = 0; i < def[def_idx].str_literal.length; i++) {
-            target[i] = def[def_idx].str_literal.str[i];
-        }
-        target[i] = BVM_EOT;
+        copy_string_literal(&st_buf[st_buf_idx],
+                            def[def_idx].str_literal.str,
+                            def[def_idx].str_literal.length),
         str_len = def[def_idx].str_literal.length + 1;
         st_buf_idx += ((str_len + sizeof(int) - 1)) / sizeof(int);
 

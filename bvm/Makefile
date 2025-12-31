@@ -11,6 +11,6 @@ $(TARGET):$(OBJS)
 .c.o:
 	$(CC) $(CFLAGS) $*.c -I../include
 ############################################################
-builtin_func.o: builtin_func.c bvm_pri.h
-execute.o: execute.c ../include/BVM.h
-opcode_info.o: opcode_info.c ../include/BVM.h
+builtin_func.o: builtin_func.c ../include/BVM.h bvm_pri.h
+execute.o: execute.c ../include/BVM.h bvm_pri.h
+opcode_info.o: opcode_info.c ../include/BVM.h bvm_pri.h

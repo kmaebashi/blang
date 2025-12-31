@@ -15,6 +15,6 @@ int bvm_get_builtin_function_count(void);
 void bvm_init_builtin_function(void);
 
 /* execute.c */
-static int bvm_get_current_arg_count(void);
+int bvm_get_current_arg_count(void);
 
 #endif /* BVM_PRI_H_INCLUDED */

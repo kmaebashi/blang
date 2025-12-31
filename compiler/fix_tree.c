@@ -235,7 +235,27 @@ fix_name_expression(Expression *expr, Boolean is_function)
                 = add_label(expr->u.name_e.name, FALSE, expr->line_number);
         }
     }
-    expr->has_lvalue = TRUE;
+    switch (expr->u.name_e.local_name->kind) {
+    case EXTERNAL_LOCAL_NAME:
+    {
+        StaticName *sn = &st_static_name[expr->u.name_e.local_name
+                                         ->u.ext_ln.static_name_index];
+        if (!sn->is_function && !sn->is_vec) {
+            expr->has_lvalue = TRUE;
+        }
+        break;
+    }
+    case INTERNAL_LOCAL_NAME:
+        expr->has_lvalue = TRUE;
+        break;
+    case AUTO_LOCAL_NAME:
+        if (!expr->u.name_e.local_name->u.auto_ln.is_vec) {
+            expr->has_lvalue = TRUE;
+        }
+        break;
+    default:
+        assert(0);
+    }
 }
 
 static void
@@ -279,8 +299,7 @@ fix_unary_expression(Expression *expr)
 {
     fix_expression(expr->u.unary_e.operand);
 
-    if (expr->u.unary_e.operator == INDIRECTION_OPERATOR
-        || expr->u.unary_e.operator == PRE_INC_OPERATOR
+    if (expr->u.unary_e.operator == PRE_INC_OPERATOR
         || expr->u.unary_e.operator == PRE_DEC_OPERATOR
         || expr->u.unary_e.operator == POST_INC_OPERATOR
         || expr->u.unary_e.operator == POST_DEC_OPERATOR) {
@@ -741,11 +760,13 @@ bcp_fix_tree(Definition *def_head)
     add_builtin_functions();
 
     for (def = def_head; def != NULL; def = def->next) {
+        if (def->kind == DECLARATION_DEFINITION) {
+            fix_declaration(def);
+        }
+    }
+    for (def = def_head; def != NULL; def = def->next) {
         if (def->kind == FUNCTION_DEFINITION) {
             fix_function_definition(def);
-        } else {
-            assert(def->kind == DECLARATION_DEFINITION);
-            fix_declaration(def);
         }
     }
     ret= bcp_malloc(sizeof(ParseTree));
