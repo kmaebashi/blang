@@ -1240,7 +1240,7 @@ parse(void)
 }
 
 int *
-BCP_compile(FILE *src_fp, int *main_address)
+BCP_compile(FILE *src_fp, int *main_address, int *heap_start_address)
 {
     Definition *def_head;
     ParseTree *parse_tree;
@@ -1263,8 +1263,11 @@ BCP_compile(FILE *src_fp, int *main_address)
     if (i == parse_tree->static_name_count) {
         bcp_compile_error(NAME_NOT_FOUND_ERR, 0, "main");
     }
+    *heap_start_address = parse_tree->heap_start_address;
 
+    /*
     bcp_dump_tree(stdout, parse_tree, memory);
+    */
 
     return memory;
     /*

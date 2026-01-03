@@ -181,6 +181,115 @@ fun_nargs(int argc, int *args, int *memory)
     return bvm_get_current_arg_count();
 }
 
+static int st_free_list = BVM_NULL;
+
+static void
+expand_heap_area(int size, int *memory)
+{
+    int alloc_size;
+    int heap_end = bvm_get_heap_end_address();
+    FreeBlock *fb;
+
+    alloc_size = (size + HEAP_HEADER_SIZE) > HEAP_ALLOC_SIZE
+        ? (size + HEAP_HEADER_SIZE) : HEAP_ALLOC_SIZE;
+    bvm_set_heap_end_address(heap_end + alloc_size);
+    fb = (FreeBlock*)&memory[heap_end];
+    fb->size = alloc_size - HEAP_HEADER_SIZE;
+    fb->next = st_free_list;
+    st_free_list = heap_end;
+}
+
+static int
+search_free_list(int size, int *memory)
+{
+    int pos;
+    int prev;
+    FreeBlock *pos_fb;
+    int new_pos;
+    FreeBlock *new_fb;
+    FreeBlock *prev_fb;
+
+    for (pos = st_free_list, prev = BVM_NULL; pos != BVM_NULL; ) {
+        pos_fb = (FreeBlock*)&memory[pos];
+        if (pos_fb->size >= size) {
+            if (pos_fb->size >= size + HEAP_HEADER_SIZE) {
+                new_pos = pos + size;
+                new_fb = (FreeBlock*)&memory[new_pos];
+                new_fb->size -= size;
+            } else {
+                new_pos = BVM_NULL;
+            }
+            if (prev == BVM_NULL) {
+                st_free_list = pos_fb->next;
+            } else {
+                prev_fb = (FreeBlock*)&memory[prev];
+                prev_fb->next = pos_fb->next;
+            }
+            if (new_pos != BVM_NULL) {
+                new_fb->next = st_free_list;
+                st_free_list = new_pos;
+            }
+            return pos;
+        }
+        prev = pos;
+        pos = pos_fb->next;
+    }
+    return BVM_NULL;
+}
+
+static int
+fun_getvec(int argc, int *args, int *memory)
+{
+    int size = args[0] + 1;
+    int ret;
+    
+    ret = search_free_list(size, memory);
+    if (ret == BVM_NULL) {
+        expand_heap_area(size, memory);
+        ret = search_free_list(size, memory);
+    }
+    return ret;
+}
+
+static int
+fun_rlsvec(int argc, int *args, int *memory)
+{
+    int v = args[0];
+    int size = args[1];
+    FreeBlock *fb;
+
+    if (size < HEAP_HEADER_SIZE) {
+        return 0;
+    }
+    fb = (FreeBlock*)&memory[v];
+    fb->size = size - HEAP_HEADER_SIZE;
+    fb->next = st_free_list;
+    st_free_list = v;
+    
+    return 0;
+}
+
+static int
+fun_dump_free_list(int argc, int *args, int *memory)
+{
+    int pos;
+    FreeBlock *fb;
+
+    fprintf(st_current_output, "** HEAP START %d **\n",
+            bvm_get_heap_start_address());
+    for (pos = st_free_list; pos != BVM_NULL; ) {
+        fb = (FreeBlock*)&memory[pos];
+        
+        fprintf(st_current_output, "pos..%d, size..%d, next..%d\n",
+                pos, fb->size, fb->next);
+
+        pos = fb->next;
+    }
+    fprintf(st_current_output, "** HEAP END %d **\n",
+            bvm_get_heap_end_address());
+    return 0;
+}
+
 static int
 fun_exit(int argc, int *args, int *memory)
 {
@@ -197,6 +306,9 @@ static char *st_builtin_function_names[] = {
     "getstr",
     "putstr",
     "nargs",
+    "getvec",
+    "rlsvec",
+    "dump_free_list",
     "exit",
 };
 
@@ -211,6 +323,9 @@ bvm_builtin_functions[] = {
     {"getstr", fun_getstr},
     {"putstr", fun_putstr},
     {"nargs", fun_nargs},
+    {"getvec", fun_getvec},
+    {"rlsvec", fun_rlsvec},
+    {"dump_free_list", fun_dump_free_list},
     {"exit", fun_exit},
 };
 
@@ -238,21 +353,3 @@ bvm_init_builtin_function(void)
     st_current_input = stdin;
     st_current_output = stdout;
 }
-
-#if 0
-int
-bvm_fun_print(int *args, int *memory)
-{
-    printf("%d\n", args[0]);
-
-    return 8;
-}
-
-int
-bvm_fun_print_s(int *args, int *memory)
-{
-    printf("%s\n", (char*)&memory[args[0]]);
-
-    return 15;
-}
-#endif

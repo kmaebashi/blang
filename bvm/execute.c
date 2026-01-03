@@ -7,6 +7,8 @@
 static BVM_OpCodeInfo *st_opcode_info;
 static int st_builtin_function_count;
 static int st_current_arg_count;
+static int st_heap_start_address;
+static int st_heap_end_address;
 
 static int
 call_builtin_function(int func_idx, int sp, int *memory)
@@ -260,11 +262,31 @@ bvm_get_current_arg_count(void)
 }
 
 int
-BVM_execute(int *memory, int main_address)
+bvm_get_heap_start_address(void)
+{
+    return st_heap_start_address;
+}
+
+int
+bvm_get_heap_end_address(void)
+{
+    return st_heap_end_address;
+}
+
+void
+bvm_set_heap_end_address(int new_end_address)
+{
+    st_heap_end_address = new_end_address;
+}
+
+int
+BVM_execute(int *memory, int main_address, int heap_start_address)
 {
     st_opcode_info = BVM_get_opcode_info();
     st_builtin_function_count = bvm_get_builtin_function_count();
     bvm_init_builtin_function();
+    st_heap_start_address = heap_start_address;
+    st_heap_end_address = heap_start_address;
 
     execute(memory, main_address);
 

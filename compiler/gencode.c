@@ -999,6 +999,7 @@ bcp_generate_code(ParseTree *parse_tree)
     fix_static_name_address(parse_tree->static_name_count,
                             parse_tree->static_name,
                             parse_tree->string_literal);
+    parse_tree->heap_start_address = st_buf_idx;
     check_static_name(parse_tree->static_name_count,
                       parse_tree->static_name);
     fix_pending_pushes();

@@ -1,4 +1,16 @@
 main() {
+  /* getvec/rlsvec */
+  auto p1, p2;
+  p1 = getvec(10);
+  printf("p1..%d*n", p1);
+  dump_free_list();
+  p2 = getvec(15);
+  printf("p2..%d*n", p2);
+  dump_free_list();
+  rlsvec(p1, 10);
+  dump_free_list();
+  goto END;
+
   /* name tokenization */
   auto a.b, .a, a1;
 
@@ -109,7 +121,8 @@ main() {
     }
     i++;
   }
-  
+END:
+  ;
 }
 
 esc_str "*0";

@@ -657,12 +657,10 @@ dump_string_literals(FILE *fp, int count, StringLiteralDef *def)
 void
 bcp_dump_tree(FILE *fp, ParseTree *parse_tree, int *memory)
 {
-#if 0
     dump_code(fp, parse_tree->code_max, memory);
     dump_tree(fp, parse_tree->def_head);
     dump_static_names(fp, parse_tree->static_name_count,
                       parse_tree->static_name);
     dump_string_literals(fp, parse_tree->string_literal_count,
                          parse_tree->string_literal);
-#endif
 }

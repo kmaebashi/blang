@@ -55,6 +55,6 @@ typedef struct {
 
 BVM_OpCodeInfo *BVM_get_opcode_info(void);
 char **BVM_get_builtin_functions(int *count);
-int BVM_execute(int *memory, int main_address);
+int BVM_execute(int *memory, int main_address, int heap_start_address);
 
 #endif /* BVM_H_INCLUDED */

@@ -7,6 +7,7 @@ main(int argc, char **argv)
 {
     FILE *src_fp;
     int main_address;
+    int heap_start_address;
     int *memory;
 
     if (argc != 2) {
@@ -15,8 +16,8 @@ main(int argc, char **argv)
 
     src_fp = fopen(argv[1], "r");
 
-    memory = BCP_compile(src_fp, &main_address);
-    BVM_execute(memory, main_address);
+    memory = BCP_compile(src_fp, &main_address, &heap_start_address);
+    BVM_execute(memory, main_address, heap_start_address);
 
     return 0;
 }

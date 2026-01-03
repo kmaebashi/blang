@@ -407,6 +407,7 @@ typedef struct {
     StaticName *static_name;
     int string_literal_count;
     StringLiteralDef *string_literal;
+    int heap_start_address;
 } ParseTree;
 
 typedef enum {
