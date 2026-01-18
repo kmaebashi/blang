@@ -215,7 +215,7 @@ search_free_list(int size, int *memory)
             if (pos_fb->size >= size + HEAP_HEADER_SIZE) {
                 new_pos = pos + size;
                 new_fb = (FreeBlock*)&memory[new_pos];
-                new_fb->size -= size;
+                new_fb->size = pos_fb->size - size;
             } else {
                 new_pos = BVM_NULL;
             }
@@ -251,20 +251,78 @@ fun_getvec(int argc, int *args, int *memory)
     return ret;
 }
 
+static void
+coalesce_free_block(int v, int size, int *memory)
+{
+    int pos;
+    FreeBlock *pos_fb;
+    int list_prev;
+    int addr_prev = BVM_NULL;
+    FreeBlock *addr_prev_fb;
+    int addr_next = BVM_NULL;
+    FreeBlock *addr_next_fb;
+    int next_prev;
+    FreeBlock *next_prev_fb;
+    FreeBlock *v_fb;
+
+    for (pos = st_free_list, list_prev = BVM_NULL; pos != BVM_NULL; ) {
+        pos_fb = (FreeBlock*)&memory[pos];
+        if (!((v + size <= pos) || (v >= pos + pos_fb->size))) {
+            fprintf(stderr, "bad rlsevec.\n");
+            exit(1);
+        }
+        if (pos + HEAP_HEADER_SIZE + pos_fb->size == v) {
+            addr_prev = pos;
+            addr_prev_fb = pos_fb;
+        }
+        if (pos == v + size) {
+            addr_next = pos;
+            addr_next_fb = pos_fb;
+            next_prev = list_prev;
+        }
+        list_prev = pos;
+        pos = pos_fb->next;
+    }
+
+    if (addr_prev != BVM_NULL && addr_next != BVM_NULL) {
+        addr_prev_fb->size += size + HEAP_HEADER_SIZE + addr_next_fb->size;
+        if (next_prev == BVM_NULL) {
+            st_free_list = addr_next_fb->next;
+        } else {
+            next_prev_fb = (FreeBlock*)&memory[next_prev];
+            next_prev_fb->next = addr_next_fb->next;
+        }
+    } else if (addr_prev != BVM_NULL) {
+        addr_prev_fb->size += size;
+    } else if (addr_next != BVM_NULL) {
+        if (next_prev == BVM_NULL) {
+            st_free_list = addr_next_fb->next;
+        } else {
+            next_prev_fb = (FreeBlock*)&memory[next_prev];
+            next_prev_fb->next = addr_next_fb->next;
+        }
+        v_fb = (FreeBlock*)&memory[v];
+        v_fb->size = size + addr_next_fb->size;
+        v_fb->next = st_free_list;
+        st_free_list = v;
+    } else {
+        if (size < HEAP_HEADER_SIZE) {
+            return;
+        }
+        v_fb = (FreeBlock*)&memory[v];
+        v_fb->size = size - HEAP_HEADER_SIZE;
+        v_fb->next = st_free_list;
+        st_free_list = v;
+    }
+}
+
 static int
-fun_rlsvec(int argc, int *args, int *memory)
+fun_rlsevec(int argc, int *args, int *memory)
 {
     int v = args[0];
-    int size = args[1];
-    FreeBlock *fb;
+    int size = args[1] + 1;
 
-    if (size < HEAP_HEADER_SIZE) {
-        return 0;
-    }
-    fb = (FreeBlock*)&memory[v];
-    fb->size = size - HEAP_HEADER_SIZE;
-    fb->next = st_free_list;
-    st_free_list = v;
+    coalesce_free_block(v, size, memory);
     
     return 0;
 }
@@ -274,20 +332,27 @@ fun_dump_free_list(int argc, int *args, int *memory)
 {
     int pos;
     FreeBlock *fb;
+    int count = 0;
 
+#if 0
     fprintf(st_current_output, "** HEAP START %d **\n",
             bvm_get_heap_start_address());
+#endif
     for (pos = st_free_list; pos != BVM_NULL; ) {
         fb = (FreeBlock*)&memory[pos];
         
+#if 0
         fprintf(st_current_output, "pos..%d, size..%d, next..%d\n",
                 pos, fb->size, fb->next);
-
+#endif
+        count++;
         pos = fb->next;
     }
+#if 0
     fprintf(st_current_output, "** HEAP END %d **\n",
             bvm_get_heap_end_address());
-    return 0;
+#endif
+    return count;
 }
 
 static int
@@ -307,7 +372,7 @@ static char *st_builtin_function_names[] = {
     "putstr",
     "nargs",
     "getvec",
-    "rlsvec",
+    "rlsevec",
     "dump_free_list",
     "exit",
 };
@@ -324,7 +389,7 @@ bvm_builtin_functions[] = {
     {"putstr", fun_putstr},
     {"nargs", fun_nargs},
     {"getvec", fun_getvec},
-    {"rlsvec", fun_rlsvec},
+    {"rlsevec", fun_rlsevec},
     {"dump_free_list", fun_dump_free_list},
     {"exit", fun_exit},
 };

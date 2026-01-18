@@ -164,7 +164,7 @@ static int gen_args(Argument *args, int count)
 }
 
 static void
-gen_function_call_expression(Expression *expr)
+gen_function_call_expression(Expression *expr, Boolean is_toplevel)
 {
     int arg_count = 0;
 
@@ -173,7 +173,9 @@ gen_function_call_expression(Expression *expr)
     gen_expression(expr->u.func_call_e.func);
     gencode(BVM_CALL);
     gencode(BVM_POP_N, arg_count + 1);
-    gencode(BVM_PUSH_RETURN_VALUE);
+    if (!is_toplevel) {
+        gencode(BVM_PUSH_RETURN_VALUE);
+    }
 }
 
 
@@ -540,7 +542,7 @@ gen_expression(Expression *expr)
         gen_index_expression(expr, FALSE);
         break;
     case FUNCTION_CALL_EXPRESSION:
-        gen_function_call_expression(expr);
+        gen_function_call_expression(expr, FALSE);
         break;
     case UNARY_EXPRESSION:
         gen_unary_expression(expr);
@@ -724,6 +726,8 @@ gen_expression_statement(Statement *stmt)
                && (expr->u.unary_e.operator == POST_INC_OPERATOR
                    || expr->u.unary_e.operator == POST_DEC_OPERATOR)) {
         gen_post_inc_dec_expression(expr, TRUE);
+    } else if (expr->kind == FUNCTION_CALL_EXPRESSION) {
+        gen_function_call_expression(expr, TRUE);
     } else {
         gen_expression(expr);
         gencode(BVM_POP);
@@ -971,7 +975,7 @@ initialize_buf(void)
     st_buf = MEM_malloc(sizeof(int) * BVM_MEMORY_SIZE);
     st_buf_idx = st_builtin_function_count;
     for (i = 0; i < st_builtin_function_count; i++) {
-        st_buf[i] = (int)BVM_NOP;
+        st_buf[i] = (int)BVM_UNREACHABLE;
     }
 }
 

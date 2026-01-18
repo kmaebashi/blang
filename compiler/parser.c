@@ -1265,9 +1265,9 @@ BCP_compile(FILE *src_fp, int *main_address, int *heap_start_address)
     }
     *heap_start_address = parse_tree->heap_start_address;
 
-    /*
+#if 1
     bcp_dump_tree(stdout, parse_tree, memory);
-    */
+#endif
 
     return memory;
     /*

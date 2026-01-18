@@ -3,7 +3,7 @@
 #include "bvm_pri.h"
 
 static BVM_OpCodeInfo st_opcode_info[] = {
-    {"NOP", 0},
+    {"UNREACHABLE", 0},
     {"PUSH", 1},
     {"PUSH_AUTO", 1},
     {"PUSH_STATIC", 1},

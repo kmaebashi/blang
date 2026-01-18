@@ -38,7 +38,9 @@ execute(int *memory, int main_address)
 #endif
         
         switch (memory[pc]) {
-        case BVM_NOP:
+        case BVM_UNREACHABLE:
+            fprintf(stderr, "Unreachable instruction. at %d\n", pc);
+            exit(1);
             break;
         case BVM_PUSH:
             memory[sp] = memory[pc + 1];

@@ -6,7 +6,7 @@
 #define BVM_EOT (4)
 
 typedef enum {
-    BVM_NOP,
+    BVM_UNREACHABLE,
     BVM_PUSH,
     BVM_PUSH_AUTO,
     BVM_PUSH_STATIC,

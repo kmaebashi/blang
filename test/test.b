@@ -1,16 +1,4 @@
 main() {
-  /* getvec/rlsvec */
-  auto p1, p2;
-  p1 = getvec(10);
-  printf("p1..%d*n", p1);
-  dump_free_list();
-  p2 = getvec(15);
-  printf("p2..%d*n", p2);
-  dump_free_list();
-  rlsvec(p1, 10);
-  dump_free_list();
-  goto END;
-
   /* name tokenization */
   auto a.b, .a, a1;
 
@@ -121,8 +109,67 @@ main() {
     }
     i++;
   }
-END:
-  ;
+
+  /* getvec/rlsvec */
+  auto p1, p2, p3;
+
+  p1 = getvec(10);
+  fill_vec(p1, 10, 1);
+  assert_eq(dump_free_list(), 1);
+
+  p2 = getvec(15);
+  fill_vec(p2, 15, 2);
+  assert_eq(dump_free_list(), 1);
+
+  check_vec(p1, 10, 1);
+  check_vec(p2, 15, 2);
+
+  rlsevec(p1, 10);
+  assert_eq(dump_free_list(), 2);
+  check_vec(p2, 15, 2);
+
+  rlsevec(p2, 15);
+  assert_eq(dump_free_list(), 1);
+
+  p1 = getvec(5);
+  p2 = getvec(6);
+  p3 = getvec(7);
+  fill_vec(p1, 5, 1);
+  fill_vec(p2, 6, 2);
+  fill_vec(p3, 7, 3);
+  rlsevec(p1, 5);
+  rlsevec(p3, 7);
+  rlsevec(p2, 6);
+  assert_eq(dump_free_list(), 1);
+
+  p1 = getvec(2);
+  p2 = getvec(3);
+  p3 = getvec(4);
+  fill_vec(p1, 2, 1);
+  fill_vec(p2, 3, 2);
+  fill_vec(p3, 4, 3);
+  rlsevec(p1, 2);
+  check_vec(p2, 3, 2);
+  check_vec(p3, 4, 3);
+  assert_eq(dump_free_list(), 2);
+  rlsevec(p2, 3);
+  check_vec(p3, 4, 3);
+  assert_eq(dump_free_list(), 2);
+  rlsevec(p3, 4);
+  assert_eq(dump_free_list(), 1);
+
+  p1 = getvec(2);
+  p2 = getvec(3);
+  p3 = getvec(4);
+  fill_vec(p1, 2, 1);
+  fill_vec(p2, 3, 2);
+  fill_vec(p3, 4, 3);
+  rlsevec(p3, 4);
+  assert_eq(dump_free_list(), 1);
+  rlsevec(p2, 3);
+  assert_eq(dump_free_list(), 1);
+  rlsevec(p1, 2);
+  assert_eq(dump_free_list(), 1);
 }
 
 esc_str "*0";
@@ -156,4 +203,26 @@ assert_eq(a, b) {
   if (a != b) {
     printf("ERROR!*n");
   }  
+}
+
+fill_vec(vec, size, value) {
+  auto i;
+
+  i = 0;
+  while (i <= size) {
+    vec[i] = value;
+    i++;
+  }
+}
+
+check_vec(vec, size, value) {
+  auto i;
+
+  i = 0;
+  while (i <= size) {
+    if (vec[i] != value) {
+      printf("ERROR! vec[%d]..%d, value..%d*n", i, vec[i], value);
+    }
+    i++;
+  }
 }

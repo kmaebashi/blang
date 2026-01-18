@@ -15,6 +15,10 @@ $(TARGET): $(SUBDIRS) main.o
 $(SUBDIRS):
 	$(MAKE) -C $@
 
+clean:
+	rm *.o
+	rm */*.o
+
 .c.o:
 	$(CC) $(CFLAGS) $*.c -I./include
 ############################################################
